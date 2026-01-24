@@ -1,13 +1,16 @@
 # blog-watcher
 
-A monitoring tool that watches blog sites for changes and sends notifications.
+A simplified, blog-focused monitoring tool based on [changedetection.io](https://github.com/dgtlmoon/changedetection.io).
+
+This project provides a streamlined experience specifically designed for monitoring blog sites, making it easier to track updates from your favorite blogs without the complexity of a general-purpose change detection system.
 
 ## Features
 
-- Monitor multiple blog URLs for content changes
-- Detect updates and modifications
-- Send notifications when changes are detected
-- Configurable check intervals
+- **Blog-focused simplicity**: Streamlined interface optimized for blog monitoring
+- **Multiple blog tracking**: Monitor multiple blog URLs simultaneously
+- **Automatic change detection**: Detect new posts and content updates
+- **Notifications**: Receive alerts when your favorite blogs are updated
+- **Easy configuration**: Simple setup compared to general-purpose monitoring tools
 
 ## Installation
 
@@ -21,6 +24,14 @@ A monitoring tool that watches blog sites for changes and sends notifications.
 # Usage instructions coming soon
 ```
 
+## Author
+
+takuto-yamamoto
+
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+This project is built upon [changedetection.io](https://github.com/dgtlmoon/changedetection.io), providing a simplified, blog-specific implementation of its powerful change detection capabilities.
