@@ -27,8 +27,9 @@ CREATE TABLE blog_state (
     feed_url      TEXT,              -- NULL if not detected
     sitemap_url   TEXT,              -- NULL if not detected
     recent_entry_keys TEXT,           -- JSON array for last N feed entry keys
-    last_check_at TEXT NOT NULL,     -- ISO8601 timestamp
-    last_change_at TEXT              -- ISO8601 timestamp (NULL if never changed)
+    last_checked_at TEXT NOT NULL,   -- ISO8601 timestamp
+    last_changed_at TEXT,            -- ISO8601 timestamp (NULL if never changed)
+    consecutive_errors INTEGER NOT NULL DEFAULT 0  -- consecutive error count
 );
 
 -- チェック履歴（デバッグ・統計用）
@@ -69,6 +70,7 @@ CREATE INDEX idx_check_history_changed ON check_history(changed) WHERE changed =
 - `feed_url`/`sitemap_url`: 未検出の場合はNULL。一定間隔で再探索するための状態。
 - `recent_entry_keys`: feedの先頭N件のキーをJSON配列で保存し、新規判定に使用。
 - タイムスタンプはISO8601文字列で保存（SQLiteにはDATETIME型がないため、文字列比較で正しくソート可能）。
+- `consecutive_errors`: 連続エラー回数。一定回数で通知/警告の判定に使用。
 
 ### check_historyの保持期間
 

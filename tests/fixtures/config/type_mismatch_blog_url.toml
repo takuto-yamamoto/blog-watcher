@@ -1,0 +1,5 @@
+[slack]
+webhook_url = "https://hooks.slack.com/services/T000/B000/XXX"
+
+[[blogs]]
+url = 123

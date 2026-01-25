@@ -257,8 +257,8 @@ class BlogState:
     etag: str | None
     last_modified: str | None
     url_fingerprint: str | None
-    last_check_at: datetime
-    last_change_at: datetime | None
+    last_checked_at: datetime
+    last_changed_at: datetime | None
     consecutive_errors: int = 0
 
     def __post_init__(self) -> None:
@@ -302,10 +302,10 @@ class BlogStateRepository:
             etag=row["etag"],
             last_modified=row["last_modified"],
             url_fingerprint=row["url_fingerprint"],
-            last_check_at=datetime.fromisoformat(row["last_check_at"]),
-            last_change_at=(
-                datetime.fromisoformat(row["last_change_at"])
-                if row["last_change_at"]
+            last_checked_at=datetime.fromisoformat(row["last_checked_at"]),
+            last_changed_at=(
+                datetime.fromisoformat(row["last_changed_at"])
+                if row["last_changed_at"]
                 else None
             ),
             consecutive_errors=row["consecutive_errors"],

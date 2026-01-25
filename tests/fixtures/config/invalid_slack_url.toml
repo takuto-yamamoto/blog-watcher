@@ -1,0 +1,5 @@
+[slack]
+webhook_url = "not-a-url"
+
+[[blogs]]
+url = "https://example.com"
