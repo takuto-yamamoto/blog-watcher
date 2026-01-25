@@ -59,6 +59,7 @@ python_version = "3.12"
 strict = true
 
 [tool.pytest.ini_options]
+pythonpath = ["."]
 testpaths = ["tests"]
 asyncio_mode = "auto"
 markers = [

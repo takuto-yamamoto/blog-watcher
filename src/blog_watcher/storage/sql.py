@@ -1,31 +1,30 @@
-SCHEMA_SQL = """
-CREATE TABLE IF NOT EXISTS blog_state (
-    blog_id TEXT PRIMARY KEY,
-    etag TEXT,
-    last_modified TEXT,
-    url_fingerprint TEXT,
-    feed_url TEXT,
-    sitemap_url TEXT,
-    recent_entry_keys TEXT,
-    last_checked_at TEXT NOT NULL,
-    last_changed_at TEXT,
-    consecutive_errors INTEGER NOT NULL DEFAULT 0
-);
+from __future__ import annotations
 
-CREATE TABLE IF NOT EXISTS check_history (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    blog_id TEXT NOT NULL,
-    checked_at TEXT NOT NULL,
-    http_status INTEGER,
-    skipped INTEGER NOT NULL DEFAULT 0,
-    changed INTEGER NOT NULL DEFAULT 0,
-    url_fingerprint TEXT,
-    error_message TEXT
-);
+from pathlib import Path
 
-CREATE INDEX IF NOT EXISTS idx_check_history_blog_time
-ON check_history(blog_id, checked_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_check_history_changed
-ON check_history(changed) WHERE changed = 1;
-"""
+def _read_sql(relative_path: str) -> str:
+    return (Path(__file__).resolve().parent / "sql" / relative_path).read_text(
+        encoding="utf-8"
+    )
+
+
+SCHEMA_SQL = _read_sql("schema.sql")
+
+BLOG_STATE_GET_SQL = _read_sql("blog_state/get.sql")
+BLOG_STATE_LIST_ALL_SQL = _read_sql("blog_state/list_all.sql")
+BLOG_STATE_UPSERT_SQL = _read_sql("blog_state/upsert.sql")
+BLOG_STATE_DELETE_SQL = _read_sql("blog_state/delete.sql")
+
+CHECK_HISTORY_ADD_SQL = _read_sql("check_history/add.sql")
+CHECK_HISTORY_LIST_BY_BLOG_ID_SQL = _read_sql("check_history/list_by_blog_id.sql")
+
+__all__ = [
+    "SCHEMA_SQL",
+    "BLOG_STATE_GET_SQL",
+    "BLOG_STATE_LIST_ALL_SQL",
+    "BLOG_STATE_UPSERT_SQL",
+    "BLOG_STATE_DELETE_SQL",
+    "CHECK_HISTORY_ADD_SQL",
+    "CHECK_HISTORY_LIST_BY_BLOG_ID_SQL",
+]

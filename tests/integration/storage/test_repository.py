@@ -6,17 +6,8 @@ from typing import Generator
 
 import pytest
 
-from blog_watcher.storage import (
-    BlogState,
-    BlogStateRepository,
-    CheckHistory,
-    CheckHistoryRepository,
-    Database,
-)
-
-
-def _now_iso() -> datetime:
-    return datetime.now(timezone.utc)
+from blog_watcher.storage import BlogStateRepository, CheckHistoryRepository, Database
+from tests.factories import make_blog_state, make_check_history
 
 
 @pytest.fixture()
@@ -30,18 +21,7 @@ def database(tmp_path: Path) -> Generator[Database, None, None]:
 
 def test_upsert_and_get_round_trip(database: Database) -> None:
     repo = BlogStateRepository(database)
-    state = BlogState(
-        blog_id="blog-1",
-        etag="etag-1",
-        last_modified="last-mod-1",
-        url_fingerprint="hash-1",
-        feed_url=None,
-        sitemap_url=None,
-        recent_entry_keys=None,
-        last_checked_at=_now_iso(),
-        last_changed_at=None,
-        consecutive_errors=0,
-    )
+    state = make_blog_state(blog_id="blog-1")
 
     repo.upsert(state)
     fetched = repo.get("blog-1")
@@ -57,30 +37,8 @@ def test_get_nonexistent_returns_none(database: Database) -> None:
 
 def test_upsert_updates_existing_record(database: Database) -> None:
     repo = BlogStateRepository(database)
-    first = BlogState(
-        blog_id="blog-1",
-        etag="etag-1",
-        last_modified="last-mod-1",
-        url_fingerprint="hash-1",
-        feed_url=None,
-        sitemap_url=None,
-        recent_entry_keys=None,
-        last_checked_at=_now_iso(),
-        last_changed_at=None,
-        consecutive_errors=0,
-    )
-    second = BlogState(
-        blog_id="blog-1",
-        etag="etag-2",
-        last_modified="last-mod-2",
-        url_fingerprint="hash-2",
-        feed_url="https://example.com/feed.xml",
-        sitemap_url="https://example.com/sitemap.xml",
-        recent_entry_keys='["k1","k2"]',
-        last_checked_at=_now_iso(),
-        last_changed_at=_now_iso(),
-        consecutive_errors=1,
-    )
+    first = make_blog_state(blog_id="blog-1", etag="etag-1")
+    second = make_blog_state(blog_id="blog-1", etag="etag-2")
 
     repo.upsert(first)
     repo.upsert(second)
@@ -92,23 +50,13 @@ def test_upsert_updates_existing_record(database: Database) -> None:
 
 def test_history_query_orders_by_timestamp(database: Database) -> None:
     history_repo = CheckHistoryRepository(database)
-    older = CheckHistory(
+    older = make_check_history(
         blog_id="blog-1",
         checked_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
-        http_status=200,
-        skipped=False,
-        changed=False,
-        url_fingerprint="hash-1",
-        error_message=None,
     )
-    newer = CheckHistory(
+    newer = make_check_history(
         blog_id="blog-1",
         checked_at=datetime(2024, 1, 2, tzinfo=timezone.utc),
-        http_status=304,
-        skipped=True,
-        changed=False,
-        url_fingerprint=None,
-        error_message=None,
     )
 
     history_repo.add(older)
@@ -121,18 +69,7 @@ def test_history_query_orders_by_timestamp(database: Database) -> None:
 
 def test_delete_existing_returns_true(database: Database) -> None:
     repo = BlogStateRepository(database)
-    state = BlogState(
-        blog_id="blog-1",
-        etag=None,
-        last_modified=None,
-        url_fingerprint=None,
-        feed_url=None,
-        sitemap_url=None,
-        recent_entry_keys=None,
-        last_checked_at=_now_iso(),
-        last_changed_at=None,
-        consecutive_errors=0,
-    )
+    state = make_blog_state(blog_id="blog-1")
 
     repo.upsert(state)
 
@@ -148,30 +85,8 @@ def test_delete_nonexistent_returns_false(database: Database) -> None:
 
 def test_list_all_returns_all_states(database: Database) -> None:
     repo = BlogStateRepository(database)
-    state_a = BlogState(
-        blog_id="blog-a",
-        etag=None,
-        last_modified=None,
-        url_fingerprint=None,
-        feed_url=None,
-        sitemap_url=None,
-        recent_entry_keys=None,
-        last_checked_at=_now_iso(),
-        last_changed_at=None,
-        consecutive_errors=0,
-    )
-    state_b = BlogState(
-        blog_id="blog-b",
-        etag="etag",
-        last_modified="last-mod",
-        url_fingerprint="hash",
-        feed_url="https://example.com/feed.xml",
-        sitemap_url=None,
-        recent_entry_keys=None,
-        last_checked_at=_now_iso(),
-        last_changed_at=None,
-        consecutive_errors=0,
-    )
+    state_a = make_blog_state(blog_id="blog-a")
+    state_b = make_blog_state(blog_id="blog-b")
 
     repo.upsert(state_a)
     repo.upsert(state_b)
