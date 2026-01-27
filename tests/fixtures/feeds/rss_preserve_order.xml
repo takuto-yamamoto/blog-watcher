@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+    <channel>
+        <title>Blog</title>
+        <item>
+            <title>First</title>
+            <guid>first</guid>
+        </item>
+        <item>
+            <title>Second</title>
+            <guid>second</guid>
+        </item>
+        <item>
+            <title>Third</title>
+            <guid>third</guid>
+        </item>
+    </channel>
+</rss>

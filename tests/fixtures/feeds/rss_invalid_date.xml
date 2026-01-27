@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+    <channel>
+        <title>Blog</title>
+        <item>
+            <title>Article</title>
+            <link>https://example.com/article</link>
+            <guid>article-guid</guid>
+            <pubDate>Invalid Date Format</pubDate>
+        </item>
+    </channel>
+</rss>

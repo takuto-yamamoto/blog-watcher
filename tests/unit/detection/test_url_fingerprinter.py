@@ -4,19 +4,9 @@ import re
 
 import pytest
 from hypothesis import assume, given
-from hypothesis import strategies as st
+from tests.strategies import url_lists
 
 from blog_watcher.detection.url_fingerprinter import fingerprint_urls, has_changed
-
-# Strategies
-_URL_REGEX = r"https?://[a-z0-9.-]+\.[a-z]{2,}(/[a-z0-9/_-]*)?"
-urls = st.from_regex(_URL_REGEX, fullmatch=True)
-url_lists = st.lists(urls, min_size=0, max_size=20)
-
-
-# ============================================================================
-# fingerprint_urls() - Property-Based Tests
-# ============================================================================
 
 
 @pytest.mark.unit
@@ -53,11 +43,6 @@ def test_fingerprint_urls_different_inputs_produce_different_fingerprints(
     assert fingerprint_1 != fingerprint_2
 
 
-# ============================================================================
-# fingerprint_urls() - Edge Cases
-# ============================================================================
-
-
 @pytest.mark.unit
 def test_fingerprint_urls_with_very_long_url_list() -> None:
     urls = [f"https://example.com/article-{i}" for i in range(1000)]
@@ -78,11 +63,6 @@ def test_fingerprint_urls_with_unicode_urls() -> None:
     fingerprint = fingerprint_urls(urls)
 
     assert re.match(r"^[0-9a-f]{64}$", fingerprint)
-
-
-# ============================================================================
-# has_changed() - Example-Based Tests
-# ============================================================================
 
 
 @pytest.mark.unit

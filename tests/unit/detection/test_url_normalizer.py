@@ -2,41 +2,9 @@ from __future__ import annotations
 
 import pytest
 from hypothesis import given
-from hypothesis import strategies as st
+from tests.strategies import url_strategy, url_with_tracking_params_strategy
 
 from blog_watcher.detection.url_normalizer import NormalizationConfig, normalize_url, normalize_urls
-
-# ============================================================================
-# Hypothesis Strategies for Property-Based Testing
-# ============================================================================
-
-
-@st.composite
-def url_strategy(draw: st.DrawFn) -> str:
-    scheme = draw(st.sampled_from(["http", "https", "HTTP", "HTTPS"]))
-    host = draw(st.from_regex(r"[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?", fullmatch=True))
-    tld = draw(st.sampled_from(["com", "org", "net", "io", "dev"]))
-    path = draw(st.one_of(st.just(""), st.from_regex(r"/[a-z0-9/_-]{0,50}", fullmatch=True)))
-    query = draw(st.one_of(st.just(""), st.from_regex(r"\?[a-z0-9=&_-]{1,50}", fullmatch=True)))
-    fragment = draw(st.one_of(st.just(""), st.from_regex(r"#[a-z0-9_-]{1,20}", fullmatch=True)))
-
-    return f"{scheme}://{host}.{tld}{path}{query}{fragment}"
-
-
-@st.composite
-def url_with_tracking_params_strategy(draw: st.DrawFn) -> str:
-    base_url = draw(url_strategy())
-    separator = "&" if "?" in base_url else "?"
-    tracking_params = ["utm_source=test", "utm_medium=email", "utm_campaign=spring", "fbclid=abc123", "gclid=xyz789", "mc_eid=test"]
-
-    tracking_param = draw(st.sampled_from(tracking_params))
-
-    return f"{base_url}{separator}{tracking_param}"
-
-
-# ============================================================================
-# Property-Based Tests
-# ============================================================================
 
 
 @pytest.mark.unit
@@ -96,11 +64,6 @@ def test_normalize_url_removes_fragments(url: str) -> None:
     normalized = normalize_url(url, config=config)
 
     assert "#" not in normalized
-
-
-# ============================================================================
-# Example-Based Tests
-# ============================================================================
 
 
 @pytest.mark.unit
@@ -194,7 +157,7 @@ def test_normalize_url_handles_percent_encoding(input_url: str, expected_output:
     "malformed_url",
     [
         pytest.param("", id="empty"),
-        pytest.param("not a url", id="no_scheme"),
+        pytest.param("not a url", id="no_scheme_or_host"),
         pytest.param("http://", id="no_host"),
         pytest.param("://example.com", id="missing_scheme"),
         pytest.param("http:/example.com", id="single_slash"),

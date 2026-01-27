@@ -1,26 +1,11 @@
 from __future__ import annotations
 
 import pytest
-from blog_watcher.detection.url_extractor import ExtractionConfig, extract_urls
 from hypothesis import given
-from hypothesis import strategies as st
 from tests.factories.detection import SAMPLE_HTML
+from tests.strategies import html_strategy, random_html
 
-# --- Strategies ---
-
-
-@st.composite
-def html_strategy(draw: st.DrawFn) -> str:
-    """Generates structured HTML-like strings from random tag sequences."""
-    tags = draw(st.lists(st.sampled_from(["<div>", "</div>", "<a>", "</a>", "<p>", "</p>", "text"]), max_size=50))
-    return "".join(tags)
-
-
-random_html = st.text(min_size=0, max_size=500)
-css_selector = st.sampled_from(["a", "link", "div", "p", "span"])
-
-
-# --- Property-Based Tests ---
+from blog_watcher.detection.url_extractor import ExtractionConfig, extract_urls
 
 
 @pytest.mark.unit
@@ -43,9 +28,6 @@ def test_extract_urls_nonmatching_selector_returns_empty(html: str) -> None:
     result = extract_urls(html, config=config)
 
     assert result == []
-
-
-# --- Example-Based Tests ---
 
 
 @pytest.mark.unit
