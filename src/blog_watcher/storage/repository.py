@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import sqlite3
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from .database import Database
 from .models import BlogState, CheckHistory
 from .sql import (
     BLOG_STATE_DELETE_SQL,
@@ -13,6 +12,11 @@ from .sql import (
     CHECK_HISTORY_ADD_SQL,
     CHECK_HISTORY_LIST_BY_BLOG_ID_SQL,
 )
+
+if TYPE_CHECKING:
+    import sqlite3
+
+    from .database import Database
 
 
 class BlogStateRepository:
@@ -58,11 +62,7 @@ class BlogStateRepository:
             sitemap_url=row["sitemap_url"],
             recent_entry_keys=row["recent_entry_keys"],
             last_checked_at=datetime.fromisoformat(row["last_checked_at"]),
-            last_changed_at=(
-                datetime.fromisoformat(row["last_changed_at"])
-                if row["last_changed_at"]
-                else None
-            ),
+            last_changed_at=(datetime.fromisoformat(row["last_changed_at"]) if row["last_changed_at"] else None),
             consecutive_errors=row["consecutive_errors"],
         )
 

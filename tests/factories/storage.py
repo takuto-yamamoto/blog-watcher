@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import Any
 
-from blog_watcher.storage import BlogState, CheckHistory
+from blog_watcher.storage.models import BlogState, CheckHistory
 
 
-def make_blog_state(**overrides: object) -> BlogState:
+def make_blog_state(**overrides: Any) -> BlogState:
     base = BlogState(
         blog_id="blog-1",
         etag=None,
@@ -15,17 +16,17 @@ def make_blog_state(**overrides: object) -> BlogState:
         feed_url=None,
         sitemap_url=None,
         recent_entry_keys=None,
-        last_checked_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        last_checked_at=datetime(2024, 1, 1, tzinfo=UTC),
         last_changed_at=None,
         consecutive_errors=0,
     )
     return replace(base, **overrides)
 
 
-def make_check_history(**overrides: object) -> CheckHistory:
+def make_check_history(**overrides: Any) -> CheckHistory:
     base = CheckHistory(
         blog_id="blog-1",
-        checked_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        checked_at=datetime(2024, 1, 1, tzinfo=UTC),
         http_status=200,
         skipped=False,
         changed=False,

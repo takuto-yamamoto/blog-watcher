@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from datetime import datetime
 
 
 @dataclass(frozen=True, slots=True)
@@ -19,9 +22,11 @@ class BlogState:
 
     def __post_init__(self) -> None:
         if not self.blog_id:
-            raise ValueError("blog_id cannot be empty")
+            msg = "blog_id cannot be empty"
+            raise ValueError(msg)
         if self.consecutive_errors < 0:
-            raise ValueError("consecutive_errors cannot be negative")
+            msg = "consecutive_errors cannot be negative"
+            raise ValueError(msg)
 
 
 @dataclass(frozen=True, slots=True)

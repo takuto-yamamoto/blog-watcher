@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import sqlite3
-from pathlib import Path
-from typing import Sequence
+from typing import TYPE_CHECKING
 
 from .sql import SCHEMA_SQL
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from pathlib import Path
 
 
 class Database:

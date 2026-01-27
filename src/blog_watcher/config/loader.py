@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import os
 import tomllib
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 
 from .models import AppConfig, BlogConfig, SlackConfig
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def _is_valid_url(value: str) -> bool:
@@ -16,36 +18,51 @@ def _is_valid_url(value: str) -> bool:
 
 def _require_str(mapping: dict[str, Any], key: str, context: str) -> str:
     value = mapping.get(key)
-    if not isinstance(value, str) or not value:
-        raise ValueError(f"{context}.{key} is required")
+    if value is None or value == "":
+        msg = f"{context}.{key} is required"
+        raise ValueError(msg)
+    if not isinstance(value, str):
+        msg = f"{context}.{key} must be a string"
+        raise TypeError(msg)
     return value
 
 
 def load_config(path: Path) -> AppConfig:
-    data = tomllib.loads(path.read_text(encoding="utf-8"))
+    try:
+        data = tomllib.loads(path.read_text(encoding="utf-8"))
+    except tomllib.TOMLDecodeError as exc:
+        msg = "toml parse error"
+        raise ValueError(msg) from exc
     if not isinstance(data, dict):
-        raise ValueError("config must be a table")
+        msg = "config must be a table"
+        raise TypeError(msg)
 
     slack = data.get("slack")
     if not isinstance(slack, dict):
-        raise ValueError("slack.webhook_url is required")
-    slack_url = os.environ.get("SLACK_WEBHOOK_URL") or _require_str(
-        slack, "webhook_url", "slack"
-    )
+        msg = "slack.webhook_url is required"
+        raise TypeError(msg)
+    slack_url = os.environ.get("SLACK_WEBHOOK_URL") or _require_str(slack, "webhook_url", "slack")
     if not _is_valid_url(slack_url):
-        raise ValueError("slack.webhook_url must be a valid URL")
+        msg = "slack.webhook_url must be a valid URL"
+        raise ValueError(msg)
 
     blogs_raw = data.get("blogs")
-    if not isinstance(blogs_raw, list) or not blogs_raw:
-        raise ValueError("blogs must be a non-empty list")
+    if not isinstance(blogs_raw, list):
+        msg = "blogs must be a list"
+        raise TypeError(msg)
+    if not blogs_raw:
+        msg = "blogs must be non-empty"
+        raise ValueError(msg)
 
     blogs: list[BlogConfig] = []
     for index, blog in enumerate(blogs_raw):
         if not isinstance(blog, dict):
-            raise ValueError(f"blogs[{index}] must be a table")
+            msg = f"blogs[{index}] must be a table"
+            raise TypeError(msg)
         url = _require_str(blog, "url", f"blogs[{index}]")
         if not _is_valid_url(url):
-            raise ValueError(f"blogs[{index}].url must be a valid URL")
+            msg = f"blogs[{index}].url must be a valid URL"
+            raise ValueError(msg)
         blogs.append(BlogConfig(url=url))
 
     return AppConfig(slack=SlackConfig(webhook_url=slack_url), blogs=blogs)

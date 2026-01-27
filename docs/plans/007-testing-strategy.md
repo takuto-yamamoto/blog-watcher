@@ -157,6 +157,99 @@ blog-watcherアプリケーションには、非同期HTTP操作、SQLite永続�
 
 #### 3.3 `detection/` モジュール
 
+##### 3.3.1 コンポーネントインターフェース定義
+
+各コンポーネントの想定インターフェース:
+
+**URL Extractor:**
+```python
+@dataclass(frozen=True, slots=True)
+class ExtractionConfig:
+    selector: str
+    attribute: str = "href"
+    exclude_selectors: tuple[str, ...] = ()
+
+def extract_urls(html: str, config: ExtractionConfig) -> list[str]: ...
+```
+
+**URL Normalizer:**
+```python
+@dataclass(frozen=True, slots=True)
+class NormalizationConfig:
+    strip_fragments: bool = True
+    strip_tracking_params: bool = True
+    force_https: bool = True
+    normalize_trailing_slash: bool = True
+    lowercase_host: bool = True
+
+def normalize_url(url: str, base_url: str | None = None, config: NormalizationConfig | None = None) -> str: ...
+def normalize_urls(urls: list[str], base_url: str, config: NormalizationConfig | None = None, deduplicate: bool = True) -> list[str]: ...
+```
+
+**URL Fingerprinter:**
+```python
+def fingerprint_urls(urls: list[str]) -> str: ...  # SHA-256 hex (64 chars)
+def has_changed(old_fingerprint: str | None, new_fingerprint: str) -> bool: ...
+```
+
+**Feed Detector:**
+```python
+@dataclass(frozen=True, slots=True)
+class FeedEntry:
+    id: str
+    title: str | None
+    link: str | None
+    published: datetime | None
+
+@dataclass(frozen=True, slots=True)
+class ParsedFeed:
+    url: str
+    title: str | None
+    entries: tuple[FeedEntry, ...]
+
+def detect_feed_urls(html: str, base_url: str) -> list[FeedInfo]: ...
+def parse_feed(content: str, feed_url: str) -> ParsedFeed | None: ...
+```
+
+**HTTP Fetcher:**
+```python
+@dataclass(frozen=True, slots=True)
+class FetchResult:
+    status_code: int
+    content: str | None
+    etag: str | None
+    last_modified: str | None
+    is_modified: bool
+
+class HttpFetcher:
+    async def fetch(self, url: str, etag: str | None = None, last_modified: str | None = None) -> FetchResult: ...
+```
+
+##### 3.3.2 Property-Based Testing戦略
+
+Hypothesisを使用したProperty-Based Testingの適用方針:
+
+| コンポーネント | PBT適合度 | PBT割合 | Example割合 | 主なプロパティ |
+|--------------|-----------|---------|-------------|---------------|
+| URL Fingerprinter | ⭐⭐⭐ | 95% | 5% | 決定性、64文字hex、順序依存性 |
+| URL Normalizer | ⭐⭐⭐ | 70% | 30% | 冪等性、小文字化、tracking param削除 |
+| URL Extractor | ⭐⭐ | 30% | 70% | クラッシュ耐性、部分集合性 |
+| Feed Detector | ⭐⭐ | 20% | 80% | クラッシュ耐性、ID非空 |
+| HTTP Fetcher | ❌ | 0% | 80% unit + 20% integration | I/O依存のためPBT不適 |
+
+**PBT適用基準:**
+- **⭐⭐⭐ (PBT主体)**: 純粋関数で数学的不変条件が明確
+- **⭐⭐ (PBT補助)**: Example-based中心、クラッシュ耐性テストにPBT
+- **❌ (PBT不適)**: I/O依存、モックが必要
+
+**依存追加:**
+```toml
+[dependency-groups]
+dev = [
+    "hypothesis>=6.100.0",
+]
+```
+
 **ユニットテスト（35+シナリオ）:**
 
 | コンポーネント | テストシナリオ |

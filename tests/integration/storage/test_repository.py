@@ -1,16 +1,19 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Generator
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 import pytest
-
-from blog_watcher.storage import BlogStateRepository, CheckHistoryRepository, Database
 from tests.factories import make_blog_state, make_check_history
 
+from blog_watcher.storage import BlogStateRepository, CheckHistoryRepository, Database
 
-@pytest.fixture()
+if TYPE_CHECKING:
+    from collections.abc import Generator
+    from pathlib import Path
+
+
+@pytest.fixture
 def database(tmp_path: Path) -> Generator[Database, None, None]:
     db_path = tmp_path / "test.db"
     db = Database(db_path)
@@ -52,11 +55,11 @@ def test_history_query_orders_by_timestamp(database: Database) -> None:
     history_repo = CheckHistoryRepository(database)
     older = make_check_history(
         blog_id="blog-1",
-        checked_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        checked_at=datetime(2024, 1, 1, tzinfo=UTC),
     )
     newer = make_check_history(
         blog_id="blog-1",
-        checked_at=datetime(2024, 1, 2, tzinfo=timezone.utc),
+        checked_at=datetime(2024, 1, 2, tzinfo=UTC),
     )
 
     history_repo.add(older)

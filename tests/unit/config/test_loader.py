@@ -59,13 +59,13 @@ def test_invalid_url_raises_validation_error(content: Path, invalid_field: str) 
 
 def test_load_empty_blogs_raises_validation_error() -> None:
     config_path = _config_path("empty_blogs.toml")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="invalid"):
         load_config(config_path)
 
 
 def test_invalid_toml_raises_error() -> None:
     config_path = _config_path("invalid_toml.toml")
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError, match="parse"):
         load_config(config_path)
 
 
@@ -78,7 +78,7 @@ def test_invalid_toml_raises_error() -> None:
     ],
 )
 def test_type_mismatch_raises_validation_error(content: Path) -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError, match=r"string|list"):
         load_config(content)
 
 
