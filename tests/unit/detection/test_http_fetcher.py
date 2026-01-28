@@ -1,35 +1,16 @@
-import time
 from collections.abc import AsyncIterator
-from email.utils import formatdate
 
 import httpx
 import pytest
 import respx
 
-from blog_watcher.detection.http_fetcher import HttpFetcher, parse_retry_after
+from blog_watcher.detection.http_fetcher import HttpFetcher
 
 
 @pytest.fixture
 async def fetcher() -> AsyncIterator[HttpFetcher]:
     async with httpx.AsyncClient() as client:
         yield HttpFetcher(client)
-
-
-@pytest.mark.unit
-class TestParseRetryAfter:
-    def test_parse_seconds_string(self) -> None:
-        result = parse_retry_after("1")
-        assert result == 1.0
-
-    def test_parse_http_date(self) -> None:
-        future_time = time.time() + 5
-        http_date = formatdate(future_time, usegmt=True)
-        result = parse_retry_after(http_date)
-        assert 4.0 <= result <= 5.5
-
-    def test_parse_invalid_returns_default(self) -> None:
-        result = parse_retry_after("invalid string")
-        assert result == 60.0
 
 
 @pytest.mark.unit
@@ -146,21 +127,6 @@ class TestHttpFetcher:
 
         assert result.status_code == 404
         assert route.call_count == 1
-
-    @respx.mock
-    async def test_fetch_retries_on_429(self, fetcher: HttpFetcher) -> None:
-        url = "https://example.com/feed"
-        route = respx.get(url).mock(
-            side_effect=[
-                httpx.Response(429, text="Too Many Requests"),
-                httpx.Response(200, text="success"),
-            ]
-        )
-
-        result = await fetcher.fetch(url)
-
-        assert result.content == "success"
-        assert route.call_count == 2
 
     @respx.mock
     async def test_fetch_preserves_encoding(self, fetcher: HttpFetcher) -> None:
