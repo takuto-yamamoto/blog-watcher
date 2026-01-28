@@ -3,14 +3,15 @@ from __future__ import annotations
 from datetime import datetime
 
 import pytest
+from hypothesis import given
+from tests.conftest import read_fixture
+from tests.strategies import html_with_links_strategy, xml_strategy
+
 from blog_watcher.detection.feed_detector import (
     ParsedFeed,
     detect_feed_urls,
     parse_feed,
 )
-from hypothesis import given
-from tests.conftest import read_fixture
-from tests.strategies import html_with_links_strategy, xml_strategy
 
 
 @pytest.mark.unit
@@ -99,6 +100,7 @@ def test_parse_feed_with_valid_rss() -> None:
 
     result = parse_feed(rss_content, feed_url=feed_url)
 
+    assert result is not None
     assert result.url == feed_url
     assert result.title == "Example Blog"
 
@@ -119,6 +121,7 @@ def test_parse_feed_with_valid_atom() -> None:
 
     result = parse_feed(atom_content, feed_url=feed_url)
 
+    assert result is not None
     assert result.url == feed_url
     assert result.title == "Example Blog"
 
@@ -156,6 +159,7 @@ def test_parse_feed_entry_id_priority_and_fallback(
 
     result = parse_feed(rss_content, feed_url=feed_url)
 
+    assert result is not None
     assert len(result.entries) == 1
     assert result.entries[0].id == expected_id
 
@@ -167,6 +171,7 @@ def test_parse_feed_entry_id_fallback_to_title_plus_published() -> None:
 
     result = parse_feed(rss_content, feed_url=feed_url)
 
+    assert result is not None
     assert len(result.entries) == 1
     assert "Article Title" in result.entries[0].id
 
@@ -178,6 +183,7 @@ def test_parse_feed_with_no_items_returns_empty_entries() -> None:
 
     result = parse_feed(rss_content, feed_url=feed_url)
 
+    assert result is not None
     assert len(result.entries) == 0
 
 
@@ -188,6 +194,7 @@ def test_parse_feed_with_invalid_date_handles_gracefully() -> None:
 
     result = parse_feed(rss_content, feed_url=feed_url)
 
+    assert result is not None
     assert len(result.entries) == 1
     assert result.entries[0].published is None
 
@@ -199,6 +206,7 @@ def test_parse_feed_decodes_cdata_sections_when_valid() -> None:
 
     result = parse_feed(rss_content, feed_url=feed_url)
 
+    assert result is not None
     assert result.title == "Blog with <special> characters"
     assert result.entries[0].title == "Article with & symbols"
 
@@ -220,6 +228,7 @@ def test_parse_feed_with_missing_title() -> None:
 
     result = parse_feed(rss_content, feed_url=feed_url)
 
+    assert result is not None
     assert result.title is None
 
 
@@ -231,7 +240,9 @@ def test_parse_feed_preserves_entry_order() -> None:
     result = parse_feed(rss_content, feed_url=feed_url)
 
     expected_count = 3
+    assert result is not None
     assert len(result.entries) == expected_count
+
     assert result.entries[0].id == "first"
     assert result.entries[1].id == "second"
     assert result.entries[2].id == "third"
