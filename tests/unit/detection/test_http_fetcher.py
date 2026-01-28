@@ -1,19 +1,35 @@
 import time
 from collections.abc import AsyncIterator
 from email.utils import formatdate
-from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
 import respx
 
-from blog_watcher.detection.http_fetcher import HttpFetcher
+from blog_watcher.detection.http_fetcher import HttpFetcher, parse_retry_after
 
 
 @pytest.fixture
 async def fetcher() -> AsyncIterator[HttpFetcher]:
     async with httpx.AsyncClient() as client:
         yield HttpFetcher(client)
+
+
+@pytest.mark.unit
+class TestParseRetryAfter:
+    def test_parse_seconds_string(self) -> None:
+        result = parse_retry_after("1")
+        assert result == 1.0
+
+    def test_parse_http_date(self) -> None:
+        future_time = time.time() + 5
+        http_date = formatdate(future_time, usegmt=True)
+        result = parse_retry_after(http_date)
+        assert 4.0 <= result <= 5.5
+
+    def test_parse_invalid_returns_default(self) -> None:
+        result = parse_retry_after("invalid string")
+        assert result == 60.0
 
 
 @pytest.mark.unit
@@ -132,53 +148,19 @@ class TestHttpFetcher:
         assert route.call_count == 1
 
     @respx.mock
-    async def test_fetch_429_respects_retry_after_seconds(self, fetcher: HttpFetcher) -> None:
+    async def test_fetch_retries_on_429(self, fetcher: HttpFetcher) -> None:
         url = "https://example.com/feed"
         route = respx.get(url).mock(
             side_effect=[
-                httpx.Response(429, headers={"Retry-After": "1"}),
+                httpx.Response(429, text="Too Many Requests"),
                 httpx.Response(200, text="success"),
             ]
         )
 
-        with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
-            result = await fetcher.fetch(url)
+        result = await fetcher.fetch(url)
 
-        assert result.status_code == 200
+        assert result.content == "success"
         assert route.call_count == 2
-        assert 0.9 <= mock_sleep.call_args[0][0] <= 1.1
-
-    @respx.mock
-    async def test_fetch_429_default_when_no_header(self, fetcher: HttpFetcher) -> None:
-        url = "https://example.com/feed"
-        respx.get(url).mock(
-            side_effect=[
-                httpx.Response(429),
-                httpx.Response(200, text="success"),
-            ]
-        )
-
-        with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
-            await fetcher.fetch(url)
-
-        mock_sleep.assert_called_once_with(60)
-
-    @respx.mock
-    async def test_fetch_429_with_http_date(self, fetcher: HttpFetcher) -> None:
-        url = "https://example.com/feed"
-        future_time = time.time() + 2
-        http_date = formatdate(future_time, usegmt=True)
-        respx.get(url).mock(
-            side_effect=[
-                httpx.Response(429, headers={"Retry-After": http_date}),
-                httpx.Response(200, text="success"),
-            ]
-        )
-
-        with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
-            await fetcher.fetch(url)
-
-        assert 1.5 <= mock_sleep.call_args[0][0] <= 2.5
 
     @respx.mock
     async def test_fetch_preserves_encoding(self, fetcher: HttpFetcher) -> None:
