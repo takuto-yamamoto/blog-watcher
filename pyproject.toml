@@ -82,4 +82,5 @@ addopts = [
     "--strict-markers",
     "--tb=short",
     "--cov-branch",
+    "--import-mode=importlib",
 ]

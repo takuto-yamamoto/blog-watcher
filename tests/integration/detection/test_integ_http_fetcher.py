@@ -22,7 +22,7 @@ async def fetcher_with_redirects(httpserver: HTTPServer) -> AsyncIterator[HttpFe
 
 
 @pytest.mark.integration
-class TestHttpFetcherIntegration:
+class TestHttpFetcherIntegrationSuite:
     async def test_fetch_success(self, fetcher: HttpFetcher, httpserver: HTTPServer) -> None:
         content = read_fixture("feeds/rss_valid.xml")
 

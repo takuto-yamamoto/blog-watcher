@@ -120,9 +120,12 @@ def _entry_id(entry: object, *, index: int) -> str:
 def _parse_published(entry: object) -> datetime | None:
     parsed: object | None
     if isinstance(entry, dict):
-        parsed = entry.get("published_parsed")
-        if parsed is None:
+        if "published_parsed" in entry:
+            parsed = entry.get("published_parsed")
+        elif "updated_parsed" in entry:
             parsed = entry.get("updated_parsed")
+        else:
+            parsed = None
     else:
         parsed = getattr(entry, "published_parsed", None)
         if parsed is None:

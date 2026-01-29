@@ -11,6 +11,7 @@ def test_load_valid_config_minimum_required_fields() -> None:
     config = load_config(fixture_path("config/minimal_valid.toml"))
 
     assert config.slack.webhook_url == "https://hooks.slack.com/services/T000/B000/XXX"
+    assert config.blogs[0].name == "Example Blog"
     assert config.blogs[0].url == "https://example.com"
 
 
@@ -26,6 +27,11 @@ def test_load_valid_config_minimum_required_fields() -> None:
             fixture_path("config/missing_blog_url.toml"),
             "blogs[0].url",
             id="missing_blog_url",
+        ),
+        pytest.param(
+            fixture_path("config/missing_blog_name.toml"),
+            "blogs[0].name",
+            id="missing_blog_name",
         ),
     ],
 )

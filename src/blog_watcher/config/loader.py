@@ -60,11 +60,12 @@ def _parse_blogs(data: dict[str, Any]) -> list[BlogConfig]:
         if not isinstance(blog, dict):
             msg = f"blogs[{index}] must be a table"
             raise ConfigError(msg)
+        name = _require_str(blog, "name", f"blogs[{index}]")
         url = _require_str(blog, "url", f"blogs[{index}]")
         if not _is_valid_url(url):
             msg = f"blogs[{index}].url must be a valid URL"
             raise ConfigError(msg)
-        blogs.append(BlogConfig(url=url))
+        blogs.append(BlogConfig(name=name, url=url))
     return blogs
 
 

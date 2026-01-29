@@ -10,6 +10,7 @@ class SlackConfig:
 
 @dataclass(frozen=True, slots=True)
 class BlogConfig:
+    name: str
     url: str
 
 
