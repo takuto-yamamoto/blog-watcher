@@ -1,9 +1,12 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
 from pydantic import BaseModel, ConfigDict, field_validator
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
 def _is_valid_url(value: str) -> bool:
@@ -63,5 +66,5 @@ class AppConfig(BaseModel):
         return value
 
     @classmethod
-    def from_raw(cls, data: dict[str, Any]) -> AppConfig:
+    def from_raw(cls, data: Mapping[str, object]) -> AppConfig:
         return cls.model_validate(data)

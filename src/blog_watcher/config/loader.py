@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import tomllib
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from pydantic import ValidationError
 
@@ -27,7 +27,7 @@ def load_config(path: Path) -> AppConfig:
     if override_url:
         data = dict(data)
         slack = data.get("slack")
-        slack_dict: dict[str, Any] = dict(slack) if isinstance(slack, dict) else {}
+        slack_dict: dict[str, object] = dict(slack) if isinstance(slack, dict) else {}
         slack_dict["webhook_url"] = override_url
         data["slack"] = slack_dict
 

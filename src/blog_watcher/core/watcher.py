@@ -5,11 +5,14 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Protocol
 
 from blog_watcher.notification import Notification, Notifier
+from blog_watcher.observability import get_logger
 from blog_watcher.storage import BlogState, BlogStateRepository, CheckHistory, CheckHistoryRepository
 
 if TYPE_CHECKING:
     from blog_watcher.config import AppConfig, BlogConfig
     from blog_watcher.detection.models import DetectionResult
+
+logger = get_logger(__name__)
 
 
 class Detector(Protocol):
@@ -33,11 +36,14 @@ class BlogWatcher:
         self._history_repo = history_repo
 
     async def check_all(self) -> None:
+        logger.info("watch_cycle_started", blogs=len(self._config.blogs))
         for blog in self._config.blogs:
             result = await self._detector.check(blog)
             self._persist_result(result)
             if result.changed:
                 await self._notifier.send(Notification(title=f"Blog updated: {blog.name}", body=blog.url, url=blog.url))
+                logger.info("change_detected", blog_id=result.blog_id, url=blog.url)
+        logger.info("watch_cycle_completed", blogs=len(self._config.blogs))
 
     def _persist_result(self, result: DetectionResult) -> None:
         now = datetime.now(UTC)

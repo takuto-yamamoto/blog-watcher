@@ -6,6 +6,9 @@ from tenacity import AsyncRetrying, retry_if_exception_type, stop_after_attempt,
 from blog_watcher.config.models import SlackConfig
 from blog_watcher.notification.base import Notifier
 from blog_watcher.notification.models import Notification
+from blog_watcher.observability import get_logger
+
+logger = get_logger(__name__)
 
 
 class SlackNotifier(Notifier):
@@ -25,7 +28,10 @@ class SlackNotifier(Notifier):
             with attempt:
                 response = await self._client.post(self._config.webhook_url, json=payload)
                 if response.status_code >= HTTPStatus.INTERNAL_SERVER_ERROR:
+                    logger.warning("slack_send_failed", status_code=response.status_code)
                     response.raise_for_status()
+
+        logger.info("slack_send_succeeded")
 
     @staticmethod
     def _build_payload(notification: Notification) -> dict[str, object]:

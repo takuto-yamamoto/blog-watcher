@@ -10,6 +10,10 @@ from tenacity import (
     wait_exponential,
 )
 
+from blog_watcher.observability import get_logger
+
+logger = get_logger(__name__)
+
 
 class HTTPHeader(StrEnum):
     IF_NONE_MATCH = "If-None-Match"
@@ -52,10 +56,15 @@ class HttpFetcher:
         ):
             with attempt:
                 response = await self._client.get(url, headers=headers)
-                if response.status_code >= HTTPStatus.INTERNAL_SERVER_ERROR or response.status_code == HTTPStatus.TOO_MANY_REQUESTS:
+                if response.status_code == HTTPStatus.TOO_MANY_REQUESTS:
+                    logger.warning("fetch_rate_limited", url=url)
+                    response.raise_for_status()
+                if response.status_code >= HTTPStatus.INTERNAL_SERVER_ERROR:
+                    logger.warning("fetch_server_error", url=url, status_code=response.status_code)
                     response.raise_for_status()
 
         if response.status_code == HTTPStatus.NOT_MODIFIED:
+            logger.info("fetch_not_modified", url=url)
             return FetchResult(
                 status_code=HTTPStatus.NOT_MODIFIED,
                 content=None,
@@ -64,6 +73,7 @@ class HttpFetcher:
                 is_modified=False,
             )
 
+        logger.info("fetch_succeeded", url=url, status_code=response.status_code)
         return FetchResult(
             status_code=response.status_code,
             content=response.text,
