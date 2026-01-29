@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 import pytest
-from tests.factories import make_blog_state, make_check_history
+from tests.factories import BlogStateFactory, CheckHistoryFactory
 
 from blog_watcher.storage import BlogStateRepository, CheckHistoryRepository, Database
 
@@ -24,7 +24,7 @@ def database(tmp_path: Path) -> Generator[Database, None, None]:
 
 def test_upsert_and_get_round_trip(database: Database) -> None:
     repo = BlogStateRepository(database)
-    state = make_blog_state(blog_id="blog-1")
+    state = BlogStateFactory.build(blog_id="blog-1")
 
     repo.upsert(state)
     fetched = repo.get("blog-1")
@@ -40,8 +40,8 @@ def test_get_nonexistent_returns_none(database: Database) -> None:
 
 def test_upsert_updates_existing_record(database: Database) -> None:
     repo = BlogStateRepository(database)
-    first = make_blog_state(blog_id="blog-1", etag="etag-1")
-    second = make_blog_state(blog_id="blog-1", etag="etag-2")
+    first = BlogStateFactory.build(blog_id="blog-1", etag="etag-1")
+    second = BlogStateFactory.build(blog_id="blog-1", etag="etag-2")
 
     repo.upsert(first)
     repo.upsert(second)
@@ -53,11 +53,11 @@ def test_upsert_updates_existing_record(database: Database) -> None:
 
 def test_history_query_orders_by_timestamp(database: Database) -> None:
     history_repo = CheckHistoryRepository(database)
-    older = make_check_history(
+    older = CheckHistoryFactory.build(
         blog_id="blog-1",
         checked_at=datetime(2024, 1, 1, tzinfo=UTC),
     )
-    newer = make_check_history(
+    newer = CheckHistoryFactory.build(
         blog_id="blog-1",
         checked_at=datetime(2024, 1, 2, tzinfo=UTC),
     )
@@ -72,7 +72,7 @@ def test_history_query_orders_by_timestamp(database: Database) -> None:
 
 def test_delete_existing_returns_true(database: Database) -> None:
     repo = BlogStateRepository(database)
-    state = make_blog_state(blog_id="blog-1")
+    state = BlogStateFactory.build(blog_id="blog-1")
 
     repo.upsert(state)
 
@@ -88,8 +88,8 @@ def test_delete_nonexistent_returns_false(database: Database) -> None:
 
 def test_list_all_returns_all_states(database: Database) -> None:
     repo = BlogStateRepository(database)
-    state_a = make_blog_state(blog_id="blog-a")
-    state_b = make_blog_state(blog_id="blog-b")
+    state_a = BlogStateFactory.build(blog_id="blog-a")
+    state_b = BlogStateFactory.build(blog_id="blog-b")
 
     repo.upsert(state_a)
     repo.upsert(state_b)

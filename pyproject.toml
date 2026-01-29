@@ -83,4 +83,6 @@ addopts = [
     "--tb=short",
     "--cov-branch",
     "--import-mode=importlib",
+    "--cov=src/blog_watcher",
+    "--cov-fail-under=85",
 ]

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from factory.base import Factory
+
 SAMPLE_HTML = """
 <!DOCTYPE html>
 <html>
@@ -30,3 +32,18 @@ SAMPLE_HTML = """
 """
 
 SAMPLE_BASE_URL = "https://example.com"
+
+
+class HtmlFactory(Factory[str]):
+    class Meta:
+        model = str
+
+    content = SAMPLE_HTML
+
+    @classmethod
+    def build(cls, **kwargs: object) -> str:
+        content = kwargs.pop("content", cls.content)
+        if kwargs:
+            msg = "unexpected kwargs"
+            raise ValueError(msg)
+        return str(content)

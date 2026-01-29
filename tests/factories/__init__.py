@@ -1,3 +1,10 @@
-from .storage import make_blog_state, make_check_history
+from .detection import SAMPLE_BASE_URL, SAMPLE_HTML, HtmlFactory
+from .storage import BlogStateFactory, CheckHistoryFactory
 
-__all__ = ["make_blog_state", "make_check_history"]
+__all__ = [
+    "SAMPLE_BASE_URL",
+    "SAMPLE_HTML",
+    "BlogStateFactory",
+    "CheckHistoryFactory",
+    "HtmlFactory",
+]

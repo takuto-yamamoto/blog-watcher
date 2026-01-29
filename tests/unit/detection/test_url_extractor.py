@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 from hypothesis import given
-from tests.factories.detection import SAMPLE_HTML
+from tests.factories import HtmlFactory
 from tests.strategies import html_strategy, random_html
 
 from blog_watcher.detection.url_extractor import ExtractionConfig, extract_urls
@@ -34,7 +34,7 @@ def test_extract_urls_nonmatching_selector_returns_empty(html: str) -> None:
 def test_extract_urls_with_valid_selector() -> None:
     config = ExtractionConfig(selector="article a")
 
-    result = extract_urls(SAMPLE_HTML, config=config)
+    result = extract_urls(HtmlFactory.build(), config=config)
 
     assert "/posts/article-1" in result
     assert "/posts/article-2" in result
@@ -47,7 +47,7 @@ def test_extract_urls_with_exclude_selectors() -> None:
         exclude_selectors=("nav a", "footer a"),
     )
 
-    result = extract_urls(SAMPLE_HTML, config=config)
+    result = extract_urls(HtmlFactory.build(), config=config)
 
     assert "/about" not in result
     assert "/contact" not in result
@@ -98,5 +98,6 @@ def test_extract_urls_with_missing_attribute_excludes_element() -> None:
 
     result = extract_urls(html, config=config)
 
+    assert len(result) == 2
     assert "/link1" in result
     assert "/link3" in result

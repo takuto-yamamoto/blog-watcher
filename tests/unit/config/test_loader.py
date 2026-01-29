@@ -1,10 +1,26 @@
-import re
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 from tests.conftest import fixture_path
 
 from blog_watcher.config import ConfigError, load_config
+
+
+def _load_validation_error(path: Path) -> ValidationError:
+    try:
+        load_config(path)
+    except ConfigError as exc:
+        if isinstance(exc.__cause__, ValidationError):
+            return exc.__cause__
+        msg = "missing validation error"
+        raise AssertionError(msg) from exc
+    msg = "expected validation error"
+    raise AssertionError(msg)
+
+
+def _has_loc(error: ValidationError, expected: tuple[object, ...]) -> bool:
+    return any(err["loc"] == expected for err in error.errors())
 
 
 def test_load_valid_config_minimum_required_fields() -> None:
@@ -16,53 +32,56 @@ def test_load_valid_config_minimum_required_fields() -> None:
 
 
 @pytest.mark.parametrize(
-    ("content", "missing_field"),
+    ("content", "expected_loc"),
     [
         pytest.param(
             fixture_path("config/missing_slack.toml"),
-            "slack.webhook_url",
+            ("slack",),
             id="missing_slack_webhook_url",
         ),
         pytest.param(
             fixture_path("config/missing_blog_url.toml"),
-            "blogs[0].url",
+            ("blogs", 0, "url"),
             id="missing_blog_url",
         ),
         pytest.param(
             fixture_path("config/missing_blog_name.toml"),
-            "blogs[0].name",
+            ("blogs", 0, "name"),
             id="missing_blog_name",
         ),
     ],
 )
-def test_missing_required_field_raises_error(content: Path, missing_field: str) -> None:
-    with pytest.raises(ConfigError, match=re.escape(missing_field)):
-        load_config(content)
+def test_missing_required_field_raises_error(content: Path, expected_loc: tuple[object, ...]) -> None:
+    error = _load_validation_error(content)
+
+    assert _has_loc(error, expected_loc)
 
 
 @pytest.mark.parametrize(
-    ("content", "invalid_field"),
+    ("content", "expected_loc"),
     [
         pytest.param(
             fixture_path("config/invalid_slack_url.toml"),
-            "slack.webhook_url",
+            ("slack", "webhook_url"),
             id="invalid_slack_url",
         ),
         pytest.param(
             fixture_path("config/invalid_blog_url.toml"),
-            "blogs[0].url",
+            ("blogs", 0, "url"),
             id="invalid_blog_url",
         ),
     ],
 )
-def test_invalid_url_raises_validation_error(content: Path, invalid_field: str) -> None:
-    with pytest.raises(ConfigError, match=re.escape(invalid_field)):
-        load_config(content)
+def test_invalid_url_raises_validation_error(content: Path, expected_loc: tuple[object, ...]) -> None:
+    error = _load_validation_error(content)
+
+    assert _has_loc(error, expected_loc)
 
 
 def test_load_empty_blogs_raises_validation_error() -> None:
-    with pytest.raises(ConfigError, match="non-empty"):
-        load_config(fixture_path("config/empty_blogs.toml"))
+    error = _load_validation_error(fixture_path("config/empty_blogs.toml"))
+
+    assert _has_loc(error, ("blogs",))
 
 
 def test_invalid_toml_raises_error() -> None:
@@ -75,24 +94,25 @@ def test_invalid_toml_raises_error() -> None:
     [
         pytest.param(
             fixture_path("config/type_mismatch_slack_url.toml"),
-            ConfigError,
+            ValidationError,
             id="type_mismatch_slack_url",
         ),
         pytest.param(
             fixture_path("config/type_mismatch_blog_url.toml"),
-            ConfigError,
+            ValidationError,
             id="type_mismatch_blog_url",
         ),
         pytest.param(
             fixture_path("config/type_mismatch_blogs_list.toml"),
-            ConfigError,
+            ValidationError,
             id="type_mismatch_blogs_list",
         ),
     ],
 )
 def test_type_mismatch_raises_validation_error(content: Path, expected_error: type[Exception]) -> None:
-    with pytest.raises(expected_error, match=r"string|list"):
-        load_config(content)
+    error = _load_validation_error(content)
+
+    assert isinstance(error, expected_error)
 
 
 def test_env_var_overrides_slack_webhook_url(monkeypatch: pytest.MonkeyPatch) -> None:

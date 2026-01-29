@@ -41,17 +41,20 @@ async def test_check_cycle_persists_state_and_history(tmp_path: Path) -> None:
         history_repo=history_repo,
     )
 
-    await watcher.check_all()
-    await watcher.check_all()
+    try:
+        await watcher.check_all()
+        await watcher.check_all()
 
-    state = state_repo.get("blog-1")
-    assert isinstance(state, BlogState)
-    assert state.url_fingerprint == "fp-1"
-    assert state.last_checked_at == now
+        state = state_repo.get("blog-1")
+        assert isinstance(state, BlogState)
+        assert state.url_fingerprint == "fp-1"
+        assert state.last_checked_at == now
 
-    history = history_repo.list_by_blog_id("blog-1")
-    assert len(history) == 2
-    assert isinstance(history[-1], CheckHistory)
-    assert history[-1].checked_at == now
+        history = history_repo.list_by_blog_id("blog-1")
+        assert len(history) == 2
+        assert isinstance(history[-1], CheckHistory)
+        assert history[-1].checked_at == now
 
-    assert len(notifier.notifications) == 1
+        assert len(notifier.notifications) == 1
+    finally:
+        db.close()

@@ -3,70 +3,14 @@ from __future__ import annotations
 import os
 import tomllib
 from typing import TYPE_CHECKING, Any
-from urllib.parse import urlparse
+
+from pydantic import ValidationError
 
 from .errors import ConfigError
-from .models import AppConfig, BlogConfig, SlackConfig
+from .models import AppConfig
 
 if TYPE_CHECKING:
     from pathlib import Path
-
-
-def _is_valid_url(value: str) -> bool:
-    parsed = urlparse(value)
-    return bool(parsed.scheme) and bool(parsed.netloc)
-
-
-def _require_str(mapping: dict[str, Any], key: str, context: str) -> str:
-    value = mapping.get(key)
-    if value is None or value == "":
-        msg = f"{context}.{key} is required"
-        raise ConfigError(msg)
-    if not isinstance(value, str):
-        msg = f"{context}.{key} must be a string"
-        raise ConfigError(msg)
-    return value
-
-
-def _parse_slack(data: dict[str, Any]) -> SlackConfig:
-    slack = data.get("slack")
-    if slack is None:
-        msg = "slack.webhook_url is required"
-        raise ConfigError(msg)
-    if not isinstance(slack, dict):
-        msg = "slack must be a table"
-        raise ConfigError(msg)
-    slack_url = os.environ.get("SLACK_WEBHOOK_URL") or _require_str(slack, "webhook_url", "slack")
-    if not _is_valid_url(slack_url):
-        msg = "slack.webhook_url must be a valid URL"
-        raise ConfigError(msg)
-    return SlackConfig(webhook_url=slack_url)
-
-
-def _parse_blogs(data: dict[str, Any]) -> list[BlogConfig]:
-    blogs_raw = data.get("blogs")
-    if blogs_raw is None:
-        msg = "blogs must be a list"
-        raise ConfigError(msg)
-    if not isinstance(blogs_raw, list):
-        msg = "blogs must be a list"
-        raise ConfigError(msg)
-    if not blogs_raw:
-        msg = "blogs must be non-empty"
-        raise ConfigError(msg)
-
-    blogs: list[BlogConfig] = []
-    for index, blog in enumerate(blogs_raw):
-        if not isinstance(blog, dict):
-            msg = f"blogs[{index}] must be a table"
-            raise ConfigError(msg)
-        name = _require_str(blog, "name", f"blogs[{index}]")
-        url = _require_str(blog, "url", f"blogs[{index}]")
-        if not _is_valid_url(url):
-            msg = f"blogs[{index}].url must be a valid URL"
-            raise ConfigError(msg)
-        blogs.append(BlogConfig(name=name, url=url))
-    return blogs
 
 
 def load_config(path: Path) -> AppConfig:
@@ -79,7 +23,16 @@ def load_config(path: Path) -> AppConfig:
         msg = "config must be a table"
         raise ConfigError(msg)
 
-    slack = _parse_slack(data)
-    blogs = _parse_blogs(data)
+    override_url = os.environ.get("SLACK_WEBHOOK_URL")
+    if override_url:
+        data = dict(data)
+        slack = data.get("slack")
+        slack_dict: dict[str, Any] = dict(slack) if isinstance(slack, dict) else {}
+        slack_dict["webhook_url"] = override_url
+        data["slack"] = slack_dict
 
-    return AppConfig(slack=slack, blogs=blogs)
+    try:
+        return AppConfig.from_raw(data)
+    except ValidationError as exc:
+        msg = "config validation error"
+        raise ConfigError(msg) from exc
