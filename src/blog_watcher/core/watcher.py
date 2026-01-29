@@ -4,7 +4,7 @@ from dataclasses import replace
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Protocol
 
-from blog_watcher.notifications import Notification, Notifier
+from blog_watcher.notification import Notification, Notifier
 from blog_watcher.storage import BlogState, BlogStateRepository, CheckHistory, CheckHistoryRepository
 
 if TYPE_CHECKING:

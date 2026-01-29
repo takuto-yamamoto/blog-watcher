@@ -4,8 +4,8 @@ import httpx
 from tenacity import AsyncRetrying, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from blog_watcher.config.models import SlackConfig
-from blog_watcher.notifications.base import Notifier
-from blog_watcher.notifications.models import Notification
+from blog_watcher.notification.base import Notifier
+from blog_watcher.notification.models import Notification
 
 
 class SlackNotifier(Notifier):

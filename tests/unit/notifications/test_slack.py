@@ -6,8 +6,8 @@ import pytest
 import respx
 
 from blog_watcher.config.models import SlackConfig
-from blog_watcher.notifications.models import Notification
-from blog_watcher.notifications.slack import SlackNotifier
+from blog_watcher.notification.models import Notification
+from blog_watcher.notification.slack import SlackNotifier
 
 WEBHOOK_URL = "https://hooks.slack.com/services/T00/B00/xxx"
 

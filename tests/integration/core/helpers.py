@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from blog_watcher.notification import Notification, Notifier
@@ -9,7 +10,14 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
 
     from blog_watcher.config import BlogConfig
-    from blog_watcher.detection import DetectionResult
+
+
+@dataclass(frozen=True, slots=True)
+class DetectionResult:
+    blog_id: str
+    changed: bool
+    http_status: int | None
+    url_fingerprint: str | None
 
 
 class CountingWatcher:
