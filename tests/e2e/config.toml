@@ -1,0 +1,6 @@
+[slack]
+webhook_url = "${SLACK_WEBHOOK_URL}"
+
+[[blogs]]
+name = "blog-watcher-e2e"
+url = "https://example.com"

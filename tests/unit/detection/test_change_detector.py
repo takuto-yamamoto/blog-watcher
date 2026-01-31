@@ -92,10 +92,10 @@ async def test_check_uses_previous_state_recent_entry_keys(example_blog: BlogCon
     current_entry_keys = json.dumps(["article-1-guid", "article-2-guid"])
 
     prev_entry_keys = current_entry_keys
-    blog_prev_state = BlogStateFactory.build(blog_id=blog.name, recent_entry_keys=prev_entry_keys)
+    blog_prev_state = BlogStateFactory.build(blog_id=blog.blog_id, recent_entry_keys=prev_entry_keys)
 
     fetcher = FakeFetcher({blog.url: blog_feed, feed_url: feed_content})
-    state_repo = FakeBlogStateRepository({blog.name: blog_prev_state})
+    state_repo = FakeBlogStateRepository({blog.blog_id: blog_prev_state})
     detector = ChangeDetector(fetcher=fetcher, state_repo=state_repo)
 
     result = await detector.check(blog)

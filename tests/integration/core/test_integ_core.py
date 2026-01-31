@@ -21,9 +21,10 @@ async def test_check_cycle_persists_state_and_history(tmp_path: Path) -> None:
     history_repo = CheckHistoryRepository(db)
 
     now = datetime.now(UTC)
+    blog_id = "https://example.com/blog"
     results = [
-        DetectionResult(blog_id="blog-1", changed=True, http_status=200, url_fingerprint="fp-1"),
-        DetectionResult(blog_id="blog-1", changed=False, http_status=304, url_fingerprint="fp-1"),
+        DetectionResult(blog_id=blog_id, changed=True, http_status=200, url_fingerprint="fp-1"),
+        DetectionResult(blog_id=blog_id, changed=False, http_status=304, url_fingerprint="fp-1"),
     ]
     detector = SequenceDetector(results)
     notifier = CapturingNotifier()
@@ -45,12 +46,12 @@ async def test_check_cycle_persists_state_and_history(tmp_path: Path) -> None:
         await watcher.check_all()
         await watcher.check_all()
 
-        state = state_repo.get("blog-1")
+        state = state_repo.get(blog_id)
         assert isinstance(state, BlogState)
         assert state.url_fingerprint == "fp-1"
         assert state.last_checked_at == now
 
-        history = history_repo.list_by_blog_id("blog-1")
+        history = history_repo.list_by_blog_id(blog_id)
         assert len(history) == 2
         assert isinstance(history[-1], CheckHistory)
         assert history[-1].checked_at == now

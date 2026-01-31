@@ -11,7 +11,7 @@ class BlogStateFactory(Factory[BlogState]):
     class Meta:
         model = BlogState
 
-    blog_id = "blog-1"
+    blog_id = "https://example.com"
     etag = None
     last_modified = None
     url_fingerprint = None
@@ -27,7 +27,7 @@ class CheckHistoryFactory(Factory[CheckHistory]):
     class Meta:
         model = CheckHistory
 
-    blog_id = "blog-1"
+    blog_id = "https://example.com"
     checked_at = datetime(2024, 1, 1, tzinfo=UTC)
     http_status = 200
     skipped = False

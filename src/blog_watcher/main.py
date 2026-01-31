@@ -75,21 +75,16 @@ def _default_db_path(config_path: Path) -> Path:
 
 
 @app.command()
-def run(config: Annotated[Path, typer.Option("--config", "-c")]) -> None:
-    """Run scheduler for continuous monitoring."""
+def run(
+    config: Annotated[Path, typer.Option(param_decls=["-c", "--config"])],
+    once: Annotated[bool, typer.Option(default=False, param_decls=["--once"])],
+) -> None:
     configure_logging()
     try:
-        asyncio.run(_run_scheduler(config))
-    except ConfigError as exc:
-        raise typer.Exit(code=1) from exc
-
-
-@app.command()
-def once(config: Annotated[Path, typer.Option("--config", "-c")]) -> None:
-    """Run a single check cycle and exit."""
-    configure_logging()
-    try:
-        asyncio.run(_run_once(config))
+        if once:
+            asyncio.run(_run_once(config))
+        else:
+            asyncio.run(_run_scheduler(config))
     except ConfigError as exc:
         raise typer.Exit(code=1) from exc
 

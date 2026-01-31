@@ -36,6 +36,7 @@ test = [
   "factory-boy>=3.3.0",
   "pytest-randomly>=3.15.0",
   "hypothesis>=6.100.0",
+  "python-dotenv>=1.0.1",
 ]
 check = [
   "mypy>=1.10.0",
@@ -62,8 +63,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**/*.py" = ["S101", "PLR2004"]
-"tests/factories/storage.py" = ["ANN401"]
+"tests/**/*.py" = ["S101", "PLR2004", "S603"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -72,6 +72,10 @@ strict = true
 [[tool.mypy.overrides]]
 module = ["feedparser"]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["pytest_httpserver"]
+disallow_untyped_calls = false
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

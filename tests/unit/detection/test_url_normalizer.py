@@ -237,8 +237,7 @@ def test_normalize_urls_deduplicates_identical_urls() -> None:
 
     result = normalize_urls(urls, base_url=base_url, config=config)
 
-    expected_count = 3
-    assert len(result) == expected_count
+    assert len(result) == 3
     assert "https://example.com/page1" in result
     assert "https://example.com/page2" in result
     assert "https://example.com/page3" in result

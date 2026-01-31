@@ -36,7 +36,7 @@ async def test_first_check_with_rss_feed_detects_new_entries(
     blog = BlogConfig(name="example", url=httpserver.url_for("/"))
     result = await detector.check(blog)
 
-    assert result.blog_id == "example"
+    assert result.blog_id == blog.blog_id
     assert result.changed is True
     assert result.http_status == 200
     assert result.url_fingerprint is not None
@@ -90,7 +90,7 @@ async def test_second_check_with_new_entries_reports_change(
     first = await detector.check(blog)
 
     updated_feed = read_fixture("feeds/rss_valid_updated.xml")
-    httpserver.clear()
+    httpserver.clear()  # type: ignore[no-untyped-call] # not implemented
     httpserver.expect_request("/").respond_with_data(
         html_content,
         status=200,

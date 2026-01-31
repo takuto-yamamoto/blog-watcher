@@ -151,8 +151,7 @@ def test_parse_feed_with_valid_rss() -> None:
     assert result.url == feed_url
     assert result.title == "Example Blog"
 
-    expected_count = 2
-    assert len(result.entries) == expected_count
+    assert len(result.entries) == 2
 
     entry1 = result.entries[0]
     assert entry1.id == "article-1-guid"
@@ -172,8 +171,7 @@ def test_parse_feed_with_valid_atom() -> None:
     assert result.url == feed_url
     assert result.title == "Example Blog"
 
-    expected_count = 2
-    assert len(result.entries) == expected_count
+    assert len(result.entries) == 2
 
     entry1 = result.entries[0]
     assert entry1.id == "urn:uuid:article-1-id"
@@ -286,9 +284,8 @@ def test_parse_feed_preserves_entry_order() -> None:
 
     result = parse_feed(rss_content, feed_url=feed_url)
 
-    expected_count = 3
     assert result is not None
-    assert len(result.entries) == expected_count
+    assert len(result.entries) == 3
 
     assert result.entries[0].id == "first"
     assert result.entries[1].id == "second"

@@ -5,6 +5,8 @@ from urllib.parse import urlparse
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
+from blog_watcher.detection.url_normalizer import normalize_url
+
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
@@ -49,6 +51,10 @@ class BlogConfig(BaseModel):
             msg = "must be a valid URL"
             raise ValueError(msg)
         return value
+
+    @property
+    def blog_id(self) -> str:
+        return normalize_url(self.url)
 
 
 class AppConfig(BaseModel):

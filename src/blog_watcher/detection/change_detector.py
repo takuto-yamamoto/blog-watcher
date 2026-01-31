@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 from blog_watcher.detection.feed_detector import ParsedFeed, detect_feed_urls, parse_feed
 from blog_watcher.detection.models import DetectionResult, DetectorConfig
@@ -12,8 +12,16 @@ from blog_watcher.storage.models import BlogState
 
 if TYPE_CHECKING:
     from blog_watcher.config import BlogConfig
-    from blog_watcher.detection.http_fetcher import FetchResult, HttpFetcher
-    from blog_watcher.storage import BlogStateRepository
+    from blog_watcher.detection.http_fetcher import FetchResult
+
+
+class Fetcher(Protocol):
+    async def fetch(self, url: str) -> FetchResult: ...
+
+
+class StateRepository(Protocol):
+    def get(self, blog_id: str) -> BlogState | None: ...
+    def upsert(self, state: BlogState) -> None: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,8 +37,8 @@ class ChangeDetector:
     def __init__(
         self,
         *,
-        fetcher: HttpFetcher,
-        state_repo: BlogStateRepository,
+        fetcher: Fetcher,
+        state_repo: StateRepository,
         config: DetectorConfig | None = None,
     ) -> None:
         self._fetcher = fetcher
@@ -45,7 +53,7 @@ class ChangeDetector:
         fingerprint = self._compute_fingerprint(parsed_feed)
 
         context = _CheckContext(
-            blog_id=blog.name,
+            blog_id=blog.blog_id,
             fetch_result=fetch_result,
             feed_url=feed_url,
             entry_keys=entry_keys,

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from blog_watcher.detection.http_fetcher import FetchResult
 from factory.base import Factory
+
+from blog_watcher.detection.http_fetcher import FetchResult
 
 SAMPLE_HTML = """
 <!DOCTYPE html>

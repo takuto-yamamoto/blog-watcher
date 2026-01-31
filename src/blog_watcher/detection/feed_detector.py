@@ -41,7 +41,7 @@ _COMMON_FEED_PATHS: tuple[str, ...] = (
 )
 
 
-def detect_feed_urls(html: str, base_url: str) -> list[str]:
+def detect_feed_urls(html: str | None, base_url: str) -> list[str]:
     urls: list[str] = []
 
     soup = parse_html(html or "")
