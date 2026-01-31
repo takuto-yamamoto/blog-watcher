@@ -29,6 +29,7 @@ dev = [
     "pytest>=8.0.0",
     "pytest-cov>=4.0.0",
     "pytest-asyncio>=0.23.0",
+    "pytest-xdist>=3.6.0",
     "ruff>=0.4.0",
     "mypy>=1.10.0",
     "respx>=0.21.0",
@@ -86,3 +87,21 @@ addopts = [
     "--cov=src/blog_watcher",
     "--cov-fail-under=85",
 ]
+
+[tool.hatch.envs.default]
+dependency-groups = ["dev"]
+
+[tool.hatch.envs.default.scripts]
+test = "pytest -n auto"
+"test:unit" = "pytest -n auto -m unit"
+"test:integration" = "pytest -n auto -m integration"
+"test:e2e" = "pytest -n auto -m e2e"
+"test:slow" = "pytest -n auto -m slow"
+
+check = "ruff check src tests && mypy src"
+"check:lint" = "ruff check src tests"
+"check:type" = "mypy src"
+
+fix = "ruff format src tests && ruff check --fix src tests"
+"fix:format" = "ruff format src tests"
+"fix:lint" = "ruff check --fix src tests"

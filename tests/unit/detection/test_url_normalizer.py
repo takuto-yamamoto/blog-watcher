@@ -253,3 +253,70 @@ def test_normalize_urls_with_empty_list_returns_empty_list() -> None:
     result = normalize_urls(urls, base_url=base_url, config=config)
 
     assert result == []
+
+
+@pytest.mark.unit
+def test_normalize_url_idna_encoding_failure() -> None:
+    config = NormalizationConfig()
+
+    with pytest.raises(ValueError, match="Invalid URL"):
+        normalize_url("http://\u200b.com", config=config)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("input_url", "expected_output"),
+    [
+        ("https://example.com/page#section?utm_source=test&valid=param", "https://example.com/page#section?valid=param"),
+        ("https://example.com/page#section?utm_source=test", "https://example.com/page#section"),
+        ("https://example.com/page#?utm_source=test&valid=param", "https://example.com/page#valid=param"),
+        ("https://example.com/page#param1=value1&utm_source=test&param2=value2", "https://example.com/page#param1=value1&param2=value2"),
+        ("https://example.com/page#param1=value1&&param2=value2", "https://example.com/page#param1=value1&param2=value2"),
+    ],
+)
+def test_normalize_url_strip_tracking_from_fragment_variants(input_url: str, expected_output: str) -> None:
+    config = NormalizationConfig(strip_tracking_params=True)
+
+    result = normalize_url(input_url, config=config)
+
+    assert result == expected_output
+
+
+@pytest.mark.unit
+def test_normalize_url_strip_fragments_empty_fragment() -> None:
+    input_url = "https://example.com/page#"
+    config = NormalizationConfig(strip_fragments=True)
+
+    result = normalize_url(input_url, config=config)
+
+    assert result == "https://example.com/page"
+
+
+@pytest.mark.unit
+def test_normalize_url_with_port() -> None:
+    input_url = "https://example.com:8080/path"
+    config = NormalizationConfig()
+
+    result = normalize_url(input_url, config=config)
+
+    assert result == "https://example.com:8080/path"
+
+
+@pytest.mark.unit
+def test_normalize_url_hostname_none_error() -> None:
+    config = NormalizationConfig()
+
+    with pytest.raises(ValueError, match="Invalid URL"):
+        normalize_url("ftp://example.com", config=config)
+
+
+@pytest.mark.unit
+def test_normalize_url_fragment_ampersand_query_no_equals_keeps_anchor() -> None:
+    input_url = "https://example.com/page#anchor&utm_source=test&param=value"
+    config = NormalizationConfig(strip_tracking_params=True)
+
+    result = normalize_url(input_url, config=config)
+
+    assert "anchor" in result
+    assert "utm_source" not in result
+    assert "param=value" in result

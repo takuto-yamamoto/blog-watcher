@@ -97,6 +97,3 @@ def test_list_all_returns_all_states(database: Database) -> None:
     results = repo.list_all()
 
     assert {state.blog_id for state in results} == {"blog-a", "blog-b"}
-
-
-# NOTE: concurrent read behavior is deferred until DB connection strategy is decided.

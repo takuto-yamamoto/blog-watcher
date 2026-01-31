@@ -84,8 +84,34 @@ def test_load_empty_blogs_raises_validation_error() -> None:
     assert _has_loc(error, ("blogs",))
 
 
+@pytest.mark.parametrize(
+    ("content", "expected_loc"),
+    [
+        pytest.param(
+            fixture_path("config/empty_slack_url.toml"),
+            ("slack", "webhook_url"),
+            id="empty_slack_url",
+        ),
+        pytest.param(
+            fixture_path("config/empty_blog_name.toml"),
+            ("blogs", 0, "name"),
+            id="empty_blog_name",
+        ),
+        pytest.param(
+            fixture_path("config/empty_blog_url.toml"),
+            ("blogs", 0, "url"),
+            id="empty_blog_url",
+        ),
+    ],
+)
+def test_empty_string_fields_raise_validation_error(content: Path, expected_loc: tuple[object, ...]) -> None:
+    error = _load_validation_error(content)
+
+    assert _has_loc(error, expected_loc)
+
+
 def test_invalid_toml_raises_error() -> None:
-    with pytest.raises(ConfigError, match="parse"):
+    with pytest.raises(ConfigError, match="toml parse error"):
         load_config(fixture_path("config/invalid_toml.toml"))
 
 
@@ -113,6 +139,32 @@ def test_type_mismatch_raises_validation_error(content: Path, expected_error: ty
     error = _load_validation_error(content)
 
     assert isinstance(error, expected_error)
+
+
+@pytest.mark.parametrize(
+    ("content", "expected_loc"),
+    [
+        pytest.param(
+            fixture_path("config/extra_field_slack.toml"),
+            ("slack", "extra"),
+            id="extra_field_slack",
+        ),
+        pytest.param(
+            fixture_path("config/extra_field_blog.toml"),
+            ("blogs", 0, "extra"),
+            id="extra_field_blog",
+        ),
+        pytest.param(
+            fixture_path("config/extra_field_root.toml"),
+            ("extra",),
+            id="extra_field_root",
+        ),
+    ],
+)
+def test_extra_fields_raise_validation_error(content: Path, expected_loc: tuple[object, ...]) -> None:
+    error = _load_validation_error(content)
+
+    assert _has_loc(error, expected_loc)
 
 
 def test_env_var_overrides_slack_webhook_url(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -1,0 +1,6 @@
+[slack]
+webhook_url = ""
+
+[[blogs]]
+name = "Example Blog"
+url = "https://example.com"

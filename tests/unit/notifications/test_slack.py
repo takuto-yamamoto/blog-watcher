@@ -5,9 +5,8 @@ import httpx
 import pytest
 import respx
 
-from blog_watcher.config.models import SlackConfig
-from blog_watcher.notification.models import Notification
-from blog_watcher.notification.slack import SlackNotifier
+from blog_watcher.config import SlackConfig
+from blog_watcher.notification import Notification, SlackNotifier
 
 WEBHOOK_URL = "https://hooks.slack.com/services/T00/B00/xxx"
 
@@ -20,13 +19,59 @@ async def notifier() -> AsyncIterator[SlackNotifier]:
 
 @pytest.mark.unit
 class TestSlackNotifier:
+    @pytest.mark.parametrize(
+        ("url", "expected_text"),
+        [
+            ("https://example.com/post", "*New Post*\nA new article.\n<https://example.com/post>"),
+            (None, "*New Post*\nA new article."),
+        ],
+    )
     @respx.mock
-    async def test_send_posts_expected_payload(self, notifier: SlackNotifier) -> None:
+    async def test_send_posts_expected_payload(self, notifier: SlackNotifier, url: str | None, expected_text: str) -> None:
         route = respx.post(WEBHOOK_URL).mock(return_value=httpx.Response(200, text="ok"))
-        notification = Notification(title="New Post", body="A new article.", url="https://example.com/post")
+        notification = Notification(title="New Post", body="A new article.", url=url)
 
         await notifier.send(notification)
 
         payload = json.loads(route.calls[0].request.content)
         assert route.call_count == 1
-        assert "<https://example.com/post>" in payload["text"]
+        assert payload["text"] == expected_text
+
+    @respx.mock
+    async def test_send_retries_on_server_error(self, notifier: SlackNotifier) -> None:
+        route = respx.post(WEBHOOK_URL).mock(
+            side_effect=[
+                httpx.Response(500, text="Internal Server Error"),
+                httpx.Response(503, text="Service Unavailable"),
+                httpx.Response(200, text="ok"),
+            ]
+        )
+        notification = Notification(title="New Post", body="A new article.", url="https://example.com/post")
+
+        await notifier.send(notification)
+
+        assert route.call_count == 3
+
+    @respx.mock
+    async def test_send_fails_after_max_retries(self, notifier: SlackNotifier) -> None:
+        route = respx.post(WEBHOOK_URL).mock(return_value=httpx.Response(500, text="Internal Server Error"))
+        notification = Notification(title="New Post", body="A new article.", url="https://example.com/post")
+
+        with pytest.raises(httpx.HTTPStatusError):
+            await notifier.send(notification)
+
+        assert route.call_count == 3
+
+    @respx.mock
+    async def test_send_retries_on_timeout(self, notifier: SlackNotifier) -> None:
+        route = respx.post(WEBHOOK_URL).mock(
+            side_effect=[
+                httpx.TimeoutException("timeout"),
+                httpx.Response(200, text="ok"),
+            ]
+        )
+        notification = Notification(title="New Post", body="A new article.", url="https://example.com/post")
+
+        await notifier.send(notification)
+
+        assert route.call_count == 2
