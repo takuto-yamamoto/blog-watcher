@@ -1,25 +1,9 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING
-
-import pytest
-from tests.factories import BlogStateFactory, CheckHistoryFactory
 
 from blog_watcher.storage import BlogStateRepository, CheckHistoryRepository, Database
-
-if TYPE_CHECKING:
-    from collections.abc import Generator
-    from pathlib import Path
-
-
-@pytest.fixture
-def database(tmp_path: Path) -> Generator[Database, None, None]:
-    db_path = tmp_path / "test.db"
-    db = Database(db_path)
-    db.initialize()
-    yield db
-    db.close()
+from tests.factories import BlogStateFactory, CheckHistoryFactory
 
 
 def test_upsert_and_get_round_trip(database: Database) -> None:

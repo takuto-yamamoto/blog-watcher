@@ -67,8 +67,6 @@ def _parse_url(url: str, *, base_url: str | None) -> tuple[ParseResult, str]:
     scheme = parsed.scheme.lower()
     if scheme not in {"http", "https"} or not parsed.netloc:
         raise ValueError(_INVALID_URL)
-    if parsed.hostname is None:
-        raise ValueError(_INVALID_URL)
     return parsed, scheme
 
 
@@ -128,8 +126,6 @@ def _strip_tracking_from_fragment(fragment: str) -> str:
 
 
 def _strip_tracking_from_ampersand_query(query: str) -> str:
-    if not query:
-        return ""
     parts = query.split("&")
     kept: list[str] = []
     for part in parts:

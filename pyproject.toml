@@ -25,19 +25,24 @@ dependencies = [
 blog-watcher = "blog_watcher.main:app"
 
 [dependency-groups]
-dev = [
-    "pytest>=8.0.0",
-    "pytest-cov>=4.0.0",
-    "pytest-asyncio>=0.23.0",
-    "pytest-xdist>=3.6.0",
-    "ruff>=0.4.0",
-    "mypy>=1.10.0",
-    "respx>=0.21.0",
-    "pytest-httpserver>=1.0.0",
-    "freezegun>=1.5.0",
-    "factory-boy>=3.3.0",
-    "pytest-randomly>=3.15.0",
-    "hypothesis>=6.100.0",
+test = [
+  "pytest>=8.0.0",
+  "pytest-cov>=4.0.0",
+  "pytest-asyncio>=0.23.0",
+  "pytest-xdist>=3.6.0",
+  "respx>=0.21.0",
+  "pytest-httpserver>=1.0.0",
+  "freezegun>=1.5.0",
+  "factory-boy>=3.3.0",
+  "pytest-randomly>=3.15.0",
+  "hypothesis>=6.100.0",
+]
+check = [
+  "mypy>=1.10.0",
+  "ruff>=0.4.0",
+]
+fix = [
+  "ruff>=0.4.0",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -85,23 +90,39 @@ addopts = [
     "--cov-branch",
     "--import-mode=importlib",
     "--cov=src/blog_watcher",
-    "--cov-fail-under=85",
 ]
 
-[tool.hatch.envs.default]
-dependency-groups = ["dev"]
+[tool.coverage.run]
+omit = ["src/blog_watcher/main.py"]
+parallel = true
 
-[tool.hatch.envs.default.scripts]
-test = "pytest -n auto"
-"test:unit" = "pytest -n auto -m unit"
-"test:integration" = "pytest -n auto -m integration"
-"test:e2e" = "pytest -n auto -m e2e"
-"test:slow" = "pytest -n auto -m slow"
+[tool.hatch.envs.test]
+dependency-groups = ["test"]
 
-check = "ruff check src tests && mypy src"
-"check:lint" = "ruff check src tests"
-"check:type" = "mypy src"
+[tool.hatch.envs.test.scripts]
+all = "pytest -n auto --cov-fail-under=85"
+cov = "pytest -n auto --cov-report=term-missing"
+cov_html = "pytest -n auto --cov-report=html"
+cov_diff = "pytest -n auto --cov-report=term-missing:skip-covered"
+unit = "pytest -n auto -m unit"
+integ = "pytest -n auto -m integration"
+e2e = "pytest -n auto -m e2e"
+slow = "pytest -n auto -m slow"
 
-fix = "ruff format src tests && ruff check --fix src tests"
-"fix:format" = "ruff format src tests"
-"fix:lint" = "ruff check --fix src tests"
+[tool.hatch.envs.check]
+skip-install = true
+dependency-groups = ["check", "test"]
+
+[tool.hatch.envs.check.scripts]
+all = "ruff check src tests && mypy src tests"
+lint = "ruff check src tests"
+type = "mypy src tests"
+
+[tool.hatch.envs.fix]
+skip-install = true
+dependency-groups = ["fix"]
+
+[tool.hatch.envs.fix.scripts]
+all = "ruff format src tests && ruff check --fix src tests"
+format = "ruff format src tests"
+lint = "ruff check --fix src tests"

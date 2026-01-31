@@ -1,6 +1,6 @@
 {
   "language": "english",
-  "model": "opusplan",
+  "model": "opus",
   "hooks": {
     "Notification": [
       {
@@ -31,7 +31,7 @@
   },
   "permissions": {
     "defaultMode": "plan",
-     "allow": [
+    "allow": [
       "WebSearch",
       "Bash(ls:*)",
       "Bash(tree:*)",

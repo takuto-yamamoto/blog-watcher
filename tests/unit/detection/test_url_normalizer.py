@@ -320,3 +320,24 @@ def test_normalize_url_fragment_ampersand_query_no_equals_keeps_anchor() -> None
     assert "anchor" in result
     assert "utm_source" not in result
     assert "param=value" in result
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("input_url", "expected_output"),
+    [
+        pytest.param(
+            "http://user@example.com/path",
+            "http://user@example.com/path",
+            id="username_only",
+        ),
+        pytest.param(
+            "http://user:pass@example.com/path",
+            "http://user:pass@example.com/path",
+            id="username_and_password",
+        ),
+    ],
+)
+def test_normalize_url_preserves_userinfo(input_url: str, expected_output: str) -> None:
+    result = normalize_url(input_url)
+    assert result == expected_output

@@ -3,10 +3,10 @@ from collections.abc import AsyncIterator
 import httpx
 import pytest
 from pytest_httpserver import HTTPServer
-from tests.conftest import read_fixture
 from werkzeug import Request, Response
 
 from blog_watcher.detection.http_fetcher import HttpFetcher
+from tests.conftest import read_fixture
 
 
 @pytest.fixture
@@ -95,3 +95,14 @@ class TestHttpFetcherIntegrationSuite:
         assert result2.status_code == 304
         assert result2.content is None
         assert result2.is_modified is False
+
+    async def test_fetch_retries_on_429(self, fetcher: HttpFetcher, httpserver: HTTPServer) -> None:
+        content = read_fixture("feeds/rss_valid.xml")
+
+        httpserver.expect_ordered_request("/feed").respond_with_data("", status=429)
+        httpserver.expect_ordered_request("/feed").respond_with_data(content, status=200)
+
+        result = await fetcher.fetch("/feed")
+
+        assert result.status_code == 200
+        assert result.content == content

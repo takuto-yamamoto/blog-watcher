@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from blog_watcher.detection.http_fetcher import FetchResult
 from factory.base import Factory
 
 SAMPLE_HTML = """
@@ -47,3 +48,14 @@ class HtmlFactory(Factory[str]):
             msg = "unexpected kwargs"
             raise ValueError(msg)
         return str(content)
+
+
+class FetchResultFactory(Factory[FetchResult]):
+    class Meta:
+        model = FetchResult
+
+    status_code = 200
+    content = SAMPLE_HTML
+    etag = None
+    last_modified = None
+    is_modified = True

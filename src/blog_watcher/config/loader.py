@@ -19,9 +19,6 @@ def load_config(path: Path) -> AppConfig:
     except tomllib.TOMLDecodeError as exc:
         msg = "toml parse error"
         raise ConfigError(msg) from exc
-    if not isinstance(data, dict):
-        msg = "config must be a table"
-        raise ConfigError(msg)
 
     override_url = os.environ.get("SLACK_WEBHOOK_URL")
     if override_url:

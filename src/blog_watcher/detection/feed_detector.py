@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -7,7 +8,8 @@ from typing import TYPE_CHECKING
 from urllib.parse import urljoin
 
 import feedparser
-from bs4 import BeautifulSoup
+
+from blog_watcher.detection.html_parser import parse_html
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -42,27 +44,20 @@ _COMMON_FEED_PATHS: tuple[str, ...] = (
 def detect_feed_urls(html: str, base_url: str) -> list[str]:
     urls: list[str] = []
 
-    soup = BeautifulSoup(html or "", "html.parser")
+    soup = parse_html(html or "")
     for link in soup.find_all("link"):
         rel_raw = link.get("rel")
-        rel: list[str] = []
-        if isinstance(rel_raw, str):
-            rel = [rel_raw]
-        elif isinstance(rel_raw, list):
-            rel = [value for value in rel_raw if isinstance(value, str)]
-        rel_lower = [value.lower() for value in rel]
-        if "alternate" not in rel_lower:
+        rel = [v.lower() for v in (rel_raw or []) if isinstance(v, str)]
+        if "alternate" not in rel:
             continue
 
-        href = link.get("href")
-        if not href or not isinstance(href, str):
+        href = _as_nonempty_str(link.get("href"))
+        if href is None:
             continue
 
-        link_type = link.get("type")
-        if link_type and isinstance(link_type, str):
-            link_type_lower = link_type.lower()
-            if "rss+xml" not in link_type_lower and "atom+xml" not in link_type_lower and "xml" not in link_type_lower:
-                continue
+        link_type = _as_nonempty_str(link.get("type"))
+        if link_type is not None and not re.search(r"(rss|atom)\+xml|xml", link_type, re.IGNORECASE):
+            continue
 
         urls.append(urljoin(base_url, href))
 
@@ -103,15 +98,15 @@ def _entry_id(entry: object, *, index: int) -> str:
         return link
 
     title = _get_str(entry, "title")
-    published = _parse_published(entry)
-    if title and published is not None:
-        return f"{title}|{published.isoformat()}"
-
-    published_text = _get_str(entry, "published")
-    if title and published_text:
-        return f"{title}|{published_text}"
-
     if title:
+        published = _parse_published(entry)
+        if published:
+            return f"{title}|{published.isoformat()}"
+
+        published_text = _get_str(entry, "published")
+        if published_text:
+            return f"{title}|{published_text}"
+
         return title
 
     return f"entry-{index}"
@@ -147,6 +142,12 @@ def _get_str(obj: object, name: str) -> str | None:
         return None
     value = value.strip()
     return value or None
+
+
+def _as_nonempty_str(x: object) -> str | None:
+    if isinstance(x, str) and x:
+        return x
+    return None
 
 
 def _dedupe(items: Iterable[str]) -> list[str]:

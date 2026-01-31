@@ -1,7 +1,7 @@
 import pytest
-from tests.mocks.core import BlockingWatcher
 
 from blog_watcher.core import WatcherScheduler
+from tests.mocks.core import BlockingWatcher
 
 pytestmark = [pytest.mark.integration]
 

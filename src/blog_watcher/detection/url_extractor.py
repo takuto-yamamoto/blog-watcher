@@ -4,8 +4,9 @@ from contextlib import suppress
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from bs4 import BeautifulSoup
 from soupsieve import SelectorSyntaxError
+
+from blog_watcher.detection.html_parser import parse_html
 
 if TYPE_CHECKING:
     from bs4 import Tag
@@ -23,7 +24,7 @@ def extract_urls(html: str, *, config: ExtractionConfig) -> list[str]:
     if not config.selector:
         raise ValueError(_invalid_selector_msg)
 
-    soup = _parse_html(html)
+    soup = parse_html(html)
 
     exclude_set: set[Tag] = set()
     for exclude_selector in config.exclude_selectors:
@@ -46,15 +47,3 @@ def extract_urls(html: str, *, config: ExtractionConfig) -> list[str]:
             urls.append(url)
 
     return urls
-
-
-def _parse_html(html: str) -> BeautifulSoup:
-    """
-    Parse HTML with fallback parser strategy.
-
-    Tries lxml first for speed, falls back to html5lib for robustness.
-    """
-    try:
-        return BeautifulSoup(html, "lxml")
-    except Exception:  # noqa: BLE001 - Fallback to html5lib on any lxml parser failure
-        return BeautifulSoup(html, "html5lib")

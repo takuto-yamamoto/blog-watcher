@@ -94,6 +94,53 @@ def test_detect_feed_urls_resolves_relative_urls_with_base_url() -> None:
 
 
 @pytest.mark.unit
+def test_detect_feed_urls_accepts_alternate_link_without_type() -> None:
+    html = '<html><head><link rel="alternate" href="/feed.xml"></head></html>'
+
+    result = detect_feed_urls(html, base_url="https://example.com")
+
+    assert len(result) == 1
+    assert "https://example.com/feed.xml" in result
+
+
+@pytest.mark.unit
+def test_detect_feed_urls_skips_link_without_rel_alternate() -> None:
+    html = '<html><head><link rel="stylesheet" type="application/rss+xml" href="/skip.xml"></head></html>'
+
+    result = detect_feed_urls(html, base_url="https://example.com")
+
+    assert "https://example.com/skip.xml" not in result
+
+
+@pytest.mark.unit
+def test_detect_feed_urls_skips_link_without_href() -> None:
+    html = '<html><head><link rel="alternate" type="application/rss+xml"></head></html>'
+
+    result = detect_feed_urls(html, base_url="https://example.com")
+
+    assert all(url != "https://example.com" for url in result)
+
+
+@pytest.mark.unit
+def test_detect_feed_urls_deduplicates_identical_links() -> None:
+    html = read_fixture("html/feed_link_duplicate.html")
+
+    result = detect_feed_urls(html, base_url="https://example.com")
+
+    assert result.count("https://example.com/feed.xml") == 1
+
+
+@pytest.mark.unit
+def test_detect_feed_urls_rejects_non_feed_type() -> None:
+    html = '<html><head><link rel="alternate" type="text/css" href="/style.css"></head></html>'
+
+    result = detect_feed_urls(html, base_url="https://example.com")
+
+    assert "https://example.com/style.css" not in result
+    assert "https://example.com/feed" in result
+
+
+@pytest.mark.unit
 def test_parse_feed_with_valid_rss() -> None:
     rss_content = read_fixture("feeds/rss_valid.xml")
     feed_url = "https://example.com/feed.xml"
@@ -246,3 +293,43 @@ def test_parse_feed_preserves_entry_order() -> None:
     assert result.entries[0].id == "first"
     assert result.entries[1].id == "second"
     assert result.entries[2].id == "third"
+
+
+@pytest.mark.unit
+def test_entry_id_title_plus_valid_published() -> None:
+    rss = read_fixture("feeds/rss_id_title_published.xml")
+
+    result = parse_feed(rss, feed_url="https://example.com/feed")
+
+    assert result is not None
+    assert result.entries[0].id == "Hello|1970-01-01T00:00:00+00:00"
+
+
+@pytest.mark.unit
+def test_entry_id_title_plus_unparseable_published() -> None:
+    rss = read_fixture("feeds/rss_id_title_unparseable_date.xml")
+
+    result = parse_feed(rss, feed_url="https://example.com/feed")
+
+    assert result is not None
+    assert result.entries[0].id == "Hello|not-a-date"
+
+
+@pytest.mark.unit
+def test_entry_id_title_only_when_published_blank() -> None:
+    rss = read_fixture("feeds/rss_id_title_blank_date.xml")
+
+    result = parse_feed(rss, feed_url="https://example.com/feed")
+
+    assert result is not None
+    assert result.entries[0].id == "Hello"
+
+
+@pytest.mark.unit
+def test_entry_id_falls_back_to_index_when_no_title() -> None:
+    rss = read_fixture("feeds/rss_id_no_title.xml")
+
+    result = parse_feed(rss, feed_url="https://example.com/feed")
+
+    assert result is not None
+    assert result.entries[0].id
