@@ -3,7 +3,7 @@ import asyncio
 import pytest
 
 from blog_watcher.core import WatcherScheduler
-from tests.mocks.core import CountingWatcher
+from tests.test_utils.mocks.core import CountingWatcher
 
 pytestmark = [pytest.mark.integration]
 

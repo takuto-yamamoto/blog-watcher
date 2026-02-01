@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
-from blog_watcher.detection.url_normalizer import normalize_url
+from blog_watcher.detection.urls.normalizer import normalize_url
 
 if TYPE_CHECKING:
     from collections.abc import Mapping

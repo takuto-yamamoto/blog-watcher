@@ -6,7 +6,7 @@ from pytest_httpserver import HTTPServer
 from werkzeug import Request, Response
 
 from blog_watcher.detection.http_fetcher import HttpFetcher
-from tests.conftest import read_fixture
+from tests.test_utils.helpers import read_fixture
 
 
 @pytest.fixture

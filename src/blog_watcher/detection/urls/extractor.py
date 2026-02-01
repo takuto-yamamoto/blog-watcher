@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from soupsieve import SelectorSyntaxError
 
-from blog_watcher.detection.html_parser import parse_html
+from blog_watcher.detection.urls.html_parser import parse_html
 
 if TYPE_CHECKING:
     from bs4 import Tag

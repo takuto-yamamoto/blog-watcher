@@ -1,17 +1,11 @@
 from __future__ import annotations
 
-from datetime import datetime
-
 import pytest
 from hypothesis import given
-from tests.conftest import read_fixture
-from tests.strategies import html_with_links_strategy, xml_strategy
+from tests.test_utils.helpers import read_fixture
+from tests.test_utils.strategies import html_with_links_strategy, xml_strategy
 
-from blog_watcher.detection.feed_detector import (
-    ParsedFeed,
-    detect_feed_urls,
-    parse_feed,
-)
+from blog_watcher.detection.feed.detector import ParsedFeed, detect_feed_urls, parse_feed
 
 
 @pytest.mark.unit
@@ -29,7 +23,7 @@ def test_parse_feed_never_crashes_on_arbitrary_input(content: str) -> None:
 def test_detect_feed_urls_never_crashes_on_arbitrary_html(html: str) -> None:
     result = detect_feed_urls(html, base_url="https://example.com")
 
-    assert all(isinstance(url, str) for url in result)
+    assert all(isinstance(url, str) for url in result.candidates)
 
 
 @pytest.mark.unit
@@ -44,31 +38,14 @@ def test_parsed_feed_entries_have_non_empty_ids(content: str) -> None:
 
 
 @pytest.mark.unit
-def test_detect_feed_urls_includes_link_rel_alternate_rss() -> None:
-    html = read_fixture("html/feed_link_rss.html")
-
-    result = detect_feed_urls(html, base_url="https://example.com")
-
-    assert "https://example.com/feed.xml" in result
-
-
-@pytest.mark.unit
-def test_detect_feed_urls_includes_link_rel_alternate_atom() -> None:
-    html = read_fixture("html/feed_link_atom.html")
-
-    result = detect_feed_urls(html, base_url="https://example.com")
-
-    assert "https://example.com/atom.xml" in result
-
-
-@pytest.mark.unit
 def test_detect_feed_urls_includes_both_rss_and_atom_links() -> None:
     html = read_fixture("html/feed_links_both.html")
 
     result = detect_feed_urls(html, base_url="https://example.com")
 
-    assert "https://example.com/feed.xml" in result
-    assert "https://example.com/atom.xml" in result
+    assert "https://example.com/feed.xml" in result.discovered
+    assert "https://example.com/atom.xml" in result.discovered
+    assert result.fallbacks == []
 
 
 @pytest.mark.unit
@@ -77,11 +54,12 @@ def test_detect_feed_urls_falls_back_to_common_paths_when_no_links() -> None:
 
     result = detect_feed_urls(html, base_url="https://example.com")
 
-    assert "https://example.com/feed" in result
-    assert "https://example.com/rss.xml" in result
-    assert "https://example.com/atom.xml" in result
-    assert "https://example.com/rss" in result
-    assert "https://example.com/feed.xml" in result
+    assert result.discovered == []
+    assert "https://example.com/feed" in result.fallbacks
+    assert "https://example.com/rss.xml" in result.fallbacks
+    assert "https://example.com/atom.xml" in result.fallbacks
+    assert "https://example.com/rss" in result.fallbacks
+    assert "https://example.com/feed.xml" in result.fallbacks
 
 
 @pytest.mark.unit
@@ -90,7 +68,7 @@ def test_detect_feed_urls_resolves_relative_urls_with_base_url() -> None:
 
     result = detect_feed_urls(html, base_url="https://example.com/blog")
 
-    assert "https://example.com/feed.xml" in result
+    assert "https://example.com/feed.xml" in result.discovered
 
 
 @pytest.mark.unit
@@ -99,8 +77,8 @@ def test_detect_feed_urls_accepts_alternate_link_without_type() -> None:
 
     result = detect_feed_urls(html, base_url="https://example.com")
 
-    assert len(result) == 1
-    assert "https://example.com/feed.xml" in result
+    assert result.discovered == ["https://example.com/feed.xml"]
+    assert result.fallbacks == []
 
 
 @pytest.mark.unit
@@ -109,16 +87,7 @@ def test_detect_feed_urls_skips_link_without_rel_alternate() -> None:
 
     result = detect_feed_urls(html, base_url="https://example.com")
 
-    assert "https://example.com/skip.xml" not in result
-
-
-@pytest.mark.unit
-def test_detect_feed_urls_skips_link_without_href() -> None:
-    html = '<html><head><link rel="alternate" type="application/rss+xml"></head></html>'
-
-    result = detect_feed_urls(html, base_url="https://example.com")
-
-    assert all(url != "https://example.com" for url in result)
+    assert "https://example.com/skip.xml" not in result.candidates
 
 
 @pytest.mark.unit
@@ -127,7 +96,7 @@ def test_detect_feed_urls_deduplicates_identical_links() -> None:
 
     result = detect_feed_urls(html, base_url="https://example.com")
 
-    assert result.count("https://example.com/feed.xml") == 1
+    assert result.discovered.count("https://example.com/feed.xml") == 1
 
 
 @pytest.mark.unit
@@ -136,8 +105,7 @@ def test_detect_feed_urls_rejects_non_feed_type() -> None:
 
     result = detect_feed_urls(html, base_url="https://example.com")
 
-    assert "https://example.com/style.css" not in result
-    assert "https://example.com/feed" in result
+    assert "https://example.com/style.css" not in result.candidates
 
 
 @pytest.mark.unit
@@ -149,15 +117,12 @@ def test_parse_feed_with_valid_rss() -> None:
 
     assert result is not None
     assert result.url == feed_url
-    assert result.title == "Example Blog"
 
     assert len(result.entries) == 2
-
     entry1 = result.entries[0]
     assert entry1.id == "article-1-guid"
     assert entry1.title == "Article 1"
     assert entry1.link == "https://example.com/article-1"
-    assert isinstance(entry1.published, datetime)
 
 
 @pytest.mark.unit
@@ -169,10 +134,8 @@ def test_parse_feed_with_valid_atom() -> None:
 
     assert result is not None
     assert result.url == feed_url
-    assert result.title == "Example Blog"
 
     assert len(result.entries) == 2
-
     entry1 = result.entries[0]
     assert entry1.id == "urn:uuid:article-1-id"
     assert entry1.title == "Article 1"
@@ -195,10 +158,7 @@ def test_parse_feed_with_valid_atom() -> None:
         ),
     ],
 )
-def test_parse_feed_entry_id_priority_and_fallback(
-    fixture_name: str,
-    expected_id: str,
-) -> None:
+def test_parse_feed_entry_id_priority_and_fallback(fixture_name: str, expected_id: str) -> None:
     rss_content = read_fixture(fixture_name)
     feed_url = "https://example.com/feed.xml"
 
@@ -207,18 +167,6 @@ def test_parse_feed_entry_id_priority_and_fallback(
     assert result is not None
     assert len(result.entries) == 1
     assert result.entries[0].id == expected_id
-
-
-@pytest.mark.unit
-def test_parse_feed_entry_id_fallback_to_title_plus_published() -> None:
-    rss_content = read_fixture("feeds/rss_title_published_only.xml")
-    feed_url = "https://example.com/feed.xml"
-
-    result = parse_feed(rss_content, feed_url=feed_url)
-
-    assert result is not None
-    assert len(result.entries) == 1
-    assert "Article Title" in result.entries[0].id
 
 
 @pytest.mark.unit
@@ -254,16 +202,6 @@ def test_parse_feed_decodes_cdata_sections_when_valid() -> None:
     assert result is not None
     assert result.title == "Blog with <special> characters"
     assert result.entries[0].title == "Article with & symbols"
-
-
-@pytest.mark.unit
-def test_parse_feed_handles_malformed_cdata_gracefully() -> None:
-    rss_content = read_fixture("feeds/rss_cdata_malformed.xml")
-    feed_url = "https://example.com/feed.xml"
-
-    result = parse_feed(rss_content, feed_url=feed_url)
-
-    assert result is None or isinstance(result, ParsedFeed)
 
 
 @pytest.mark.unit

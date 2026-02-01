@@ -8,7 +8,7 @@ from blog_watcher.config import AppConfig, BlogConfig, SlackConfig
 from blog_watcher.core import BlogWatcher
 from blog_watcher.detection import DetectionResult
 from blog_watcher.storage import BlogState, BlogStateRepository, CheckHistory, CheckHistoryRepository, Database
-from tests.mocks.core import CapturingNotifier, SequenceDetector
+from tests.test_utils.mocks.core import CapturingNotifier, SequenceDetector
 
 pytestmark = [pytest.mark.integration]
 

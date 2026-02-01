@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import StrEnum
 from http import HTTPStatus
+from typing import Protocol
 
 import httpx
 from tenacity import (
@@ -29,6 +32,16 @@ class FetchResult:
     etag: str | None
     last_modified: str | None
     is_modified: bool
+
+
+class Fetcher(Protocol):
+    async def fetch(
+        self,
+        url: str,
+        *,
+        etag: str | None = None,
+        last_modified: str | None = None,
+    ) -> FetchResult: ...
 
 
 class HttpFetcher:

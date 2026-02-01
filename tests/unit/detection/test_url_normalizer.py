@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import pytest
 from hypothesis import given
-from tests.strategies import url_strategy, url_with_tracking_params_strategy
+from tests.test_utils.strategies import url_strategy, url_with_tracking_params_strategy
 
-from blog_watcher.detection.url_normalizer import NormalizationConfig, normalize_url, normalize_urls
+from blog_watcher.detection.urls.normalizer import NormalizationConfig, normalize_url, normalize_urls
 
 
 @pytest.mark.unit

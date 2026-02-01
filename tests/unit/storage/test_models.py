@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pytest
-from tests.factories.storage import BlogStateFactory
+from tests.test_utils.factories import BlogStateFactory
 
 
 @pytest.mark.parametrize("blog_id", [""])

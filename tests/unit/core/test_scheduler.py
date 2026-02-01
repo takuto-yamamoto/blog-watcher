@@ -1,5 +1,5 @@
 import pytest
-from tests.mocks.core import CountingWatcher
+from tests.test_utils.mocks import CountingWatcher
 
 from blog_watcher.core import WatcherScheduler
 

@@ -2,25 +2,20 @@ from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
-from tests.conftest import fixture_path
+from tests.test_utils.helpers import fixture_path
 
 from blog_watcher.config import ConfigError, load_config
 
 
-def _load_validation_error(path: Path) -> ValidationError:
-    try:
-        load_config(path)
-    except ConfigError as exc:
-        if isinstance(exc.__cause__, ValidationError):
-            return exc.__cause__
-        msg = "missing validation error"
-        raise AssertionError(msg) from exc
-    msg = "expected validation error"
-    raise AssertionError(msg)
-
-
 def _has_loc(error: ValidationError, expected: tuple[object, ...]) -> bool:
     return any(err["loc"] == expected for err in error.errors())
+
+
+def _extract_validation_error(exc: ConfigError) -> ValidationError:
+    if isinstance(exc.__cause__, ValidationError):
+        return exc.__cause__
+    msg = "missing validation error"
+    raise AssertionError(msg) from exc
 
 
 def test_load_valid_config_minimum_required_fields() -> None:
@@ -52,8 +47,10 @@ def test_load_valid_config_minimum_required_fields() -> None:
     ],
 )
 def test_missing_required_field_raises_error(content: Path, expected_loc: tuple[object, ...]) -> None:
-    error = _load_validation_error(content)
+    with pytest.raises(ConfigError) as excinfo:
+        load_config(content)
 
+    error = _extract_validation_error(excinfo.value)
     assert _has_loc(error, expected_loc)
 
 
@@ -73,13 +70,17 @@ def test_missing_required_field_raises_error(content: Path, expected_loc: tuple[
     ],
 )
 def test_invalid_url_raises_validation_error(content: Path, expected_loc: tuple[object, ...]) -> None:
-    error = _load_validation_error(content)
+    with pytest.raises(ConfigError) as excinfo:
+        load_config(content)
 
+    error = _extract_validation_error(excinfo.value)
     assert _has_loc(error, expected_loc)
 
 
 def test_load_empty_blogs_raises_validation_error() -> None:
-    error = _load_validation_error(fixture_path("config/empty_blogs.toml"))
+    with pytest.raises(ConfigError) as excinfo:
+        load_config(fixture_path("config/empty_blogs.toml"))
+    error = _extract_validation_error(excinfo.value)
 
     assert _has_loc(error, ("blogs",))
 
@@ -105,8 +106,10 @@ def test_load_empty_blogs_raises_validation_error() -> None:
     ],
 )
 def test_empty_string_fields_raise_validation_error(content: Path, expected_loc: tuple[object, ...]) -> None:
-    error = _load_validation_error(content)
+    with pytest.raises(ConfigError) as excinfo:
+        load_config(content)
 
+    error = _extract_validation_error(excinfo.value)
     assert _has_loc(error, expected_loc)
 
 
@@ -136,8 +139,10 @@ def test_invalid_toml_raises_error() -> None:
     ],
 )
 def test_type_mismatch_raises_validation_error(content: Path, expected_error: type[Exception]) -> None:
-    error = _load_validation_error(content)
+    with pytest.raises(ConfigError) as excinfo:
+        load_config(content)
 
+    error = _extract_validation_error(excinfo.value)
     assert isinstance(error, expected_error)
 
 
@@ -162,8 +167,10 @@ def test_type_mismatch_raises_validation_error(content: Path, expected_error: ty
     ],
 )
 def test_extra_fields_raise_validation_error(content: Path, expected_loc: tuple[object, ...]) -> None:
-    error = _load_validation_error(content)
+    with pytest.raises(ConfigError) as excinfo:
+        load_config(content)
 
+    error = _extract_validation_error(excinfo.value)
     assert _has_loc(error, expected_loc)
 
 

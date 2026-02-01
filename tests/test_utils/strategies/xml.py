@@ -1,5 +1,3 @@
-"""XML-related Hypothesis strategies."""
-
 from __future__ import annotations
 
 from hypothesis import strategies as st

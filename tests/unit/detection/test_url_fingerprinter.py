@@ -4,9 +4,9 @@ import re
 
 import pytest
 from hypothesis import assume, given
-from tests.strategies import url_lists
+from tests.test_utils.strategies import url_lists
 
-from blog_watcher.detection.url_fingerprinter import fingerprint_urls, has_changed
+from blog_watcher.detection.urls.fingerprinter import fingerprint_urls, has_changed
 
 
 @pytest.mark.unit

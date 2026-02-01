@@ -1,11 +1,11 @@
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 
-FIXTURES_DIR = Path(__file__).resolve().parents[2] / "fixtures"
+FIXTURE_DIR = Path(__file__).resolve().parents[2] / "test_utils" / "fixture"
 
 
 def _read_fixture(name: str) -> bytes:
-    return (FIXTURES_DIR / name).read_bytes()
+    return (FIXTURE_DIR / name).read_bytes()
 
 
 ROUTES: dict[str, tuple[str, bytes]] = {

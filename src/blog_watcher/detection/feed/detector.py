@@ -9,7 +9,7 @@ from urllib.parse import urljoin
 
 import feedparser
 
-from blog_watcher.detection.html_parser import parse_html
+from blog_watcher.detection.urls.html_parser import parse_html
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -41,7 +41,17 @@ _COMMON_FEED_PATHS: tuple[str, ...] = (
 )
 
 
-def detect_feed_urls(html: str | None, base_url: str) -> list[str]:
+@dataclass(frozen=True, slots=True)
+class FeedUrlDiscovery:
+    discovered: list[str]
+    fallbacks: list[str]
+
+    @property
+    def candidates(self) -> list[str]:
+        return self.discovered or self.fallbacks
+
+
+def detect_feed_urls(html: str | None, base_url: str) -> FeedUrlDiscovery:
     urls: list[str] = []
 
     soup = parse_html(html or "")
@@ -61,10 +71,9 @@ def detect_feed_urls(html: str | None, base_url: str) -> list[str]:
 
         urls.append(urljoin(base_url, href))
 
-    if not urls:
-        urls.extend(urljoin(base_url, path) for path in _COMMON_FEED_PATHS)
-
-    return _dedupe(urls)
+    discovered = _dedupe(urls)
+    fallbacks = [urljoin(base_url, path) for path in _COMMON_FEED_PATHS] if not discovered else []
+    return FeedUrlDiscovery(discovered=discovered, fallbacks=fallbacks)
 
 
 def parse_feed(content: str, feed_url: str) -> ParsedFeed | None:

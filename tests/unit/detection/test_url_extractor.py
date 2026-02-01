@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import pytest
 from hypothesis import given
-from tests.factories import HtmlFactory
-from tests.strategies import html_strategy, random_html
+from tests.test_utils.factories import HtmlFactory
+from tests.test_utils.strategies import html_strategy, random_html
 
-from blog_watcher.detection.url_extractor import ExtractionConfig, extract_urls
+from blog_watcher.detection.urls.extractor import ExtractionConfig, extract_urls
 
 
 @pytest.mark.unit

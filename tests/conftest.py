@@ -3,23 +3,46 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
+from typing import TYPE_CHECKING
 
+import pytest
 from hypothesis import HealthCheck, settings
 
-FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
+from tests.test_utils.factories import FetchResultFactory
+from tests.test_utils.helpers import read_fixture
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from blog_watcher.detection.http_fetcher import FetchResult
 
 
-def fixture_path(path: str) -> Path:
-    return FIXTURES_DIR / path
+@pytest.fixture
+def feed_link_html() -> FetchResult:
+    return FetchResultFactory.build(content=read_fixture("html/feed_link_rss.html"))
 
 
-def read_fixture(path: str) -> str:
-    return fixture_path(path).read_text(encoding="utf-8")
+@pytest.fixture
+def rss_valid() -> FetchResult:
+    return FetchResultFactory.build(content=read_fixture("feeds/rss_valid.xml"))
 
 
-def read_fixture_byte(path: str) -> bytes:
-    return fixture_path(path).read_bytes()
+@pytest.fixture
+def sitemap_urlset() -> FetchResult:
+    return FetchResultFactory.build(content=read_fixture("sitemap/urlset.xml"))
+
+
+@pytest.fixture
+def robots_allow_all() -> FetchResult:
+    return FetchResultFactory.build(content="User-agent: *\nDisallow:")
+
+
+@pytest.fixture
+def robots_with_sitemap() -> Callable[[str], FetchResult]:
+    def build(url: str) -> FetchResult:
+        return FetchResultFactory.build(content=f"Sitemap: {url}")
+
+    return build
 
 
 # Configure Hypothesis global settings

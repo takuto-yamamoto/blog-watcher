@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from blog_watcher.storage import BlogStateRepository, CheckHistoryRepository, Database
-from tests.factories import BlogStateFactory, CheckHistoryFactory
+from tests.test_utils.factories import BlogStateFactory, CheckHistoryFactory
 
 
 def test_upsert_and_get_round_trip(database: Database) -> None:
