@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from tests.e2e.helpers import load_env, start_fake_server, write_temp_config
+from tests.e2e.helpers import load_env, start_fake_server
 from tests.e2e.helpers.server import Scenario
 
 if TYPE_CHECKING:
@@ -13,8 +13,8 @@ if TYPE_CHECKING:
 
     from tests.e2e.helpers.env import E2eEnv
 
-E2E_ROOT = Path(__file__).resolve().parent
-DB_PATH = E2E_ROOT / "blog_states.sqlite"
+
+DB_PATH = Path(__file__).resolve().parent / "blog_states.sqlite"
 
 
 @pytest.fixture(scope="session")
@@ -36,20 +36,6 @@ def fake_sitemap_server() -> Generator[int, None, None]:
     yield port
     proc.terminate()
     proc.wait()
-
-
-@pytest.fixture
-def tmp_rss_config(fake_rss_server: int) -> Generator[Path, None, None]:
-    path = write_temp_config(fake_rss_server, Scenario.RSS)
-    yield path
-    path.unlink(missing_ok=True)
-
-
-@pytest.fixture
-def tmp_sitemap_config(fake_sitemap_server: int) -> Generator[Path, None, None]:
-    path = write_temp_config(fake_sitemap_server, Scenario.SITEMAP)
-    yield path
-    path.unlink(missing_ok=True)
 
 
 @pytest.fixture

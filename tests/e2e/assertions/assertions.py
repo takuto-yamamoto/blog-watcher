@@ -55,10 +55,30 @@ def assert_no_change_on_rerun(before: list[BlogStateRow], after: list[BlogStateR
         assert curr.consecutive_errors == 0, f"consecutive_errors not zero for {blog_id} after rerun"
 
 
-def assert_slack_notifications_sent(config: SlackConfig, blogs: list[BlogEntry]) -> None:
-    messages = list_messages(config)
+def assert_change_detected(before: list[BlogStateRow], after: list[BlogStateRow]) -> None:
+    before_by_id = {s.blog_id: s for s in before}
+    after_by_id = {s.blog_id: s for s in after}
+
+    assert before_by_id.keys() == after_by_id.keys(), "blog_id set changed between runs"
+
+    for blog_id, prev in before_by_id.items():
+        curr = after_by_id[blog_id]
+        assert curr.last_changed_at != prev.last_changed_at, f"last_changed_at did not change for {blog_id}"
+        assert curr.url_fingerprint != prev.url_fingerprint, f"url_fingerprint did not change for {blog_id}"
+        assert curr.consecutive_errors == 0, f"consecutive_errors not zero for {blog_id} after change"
+
+
+def assert_slack_notifications_sent(
+    config: SlackConfig,
+    *,
+    includes: set[str],
+    excludes: set[str],
+) -> None:
+    messages = list_messages(config, limit=10)
     assert messages, "No slack messages found"
 
-    blog_names = {blog.name for blog in blogs}
-    for name in blog_names:
-        assert any(name in msg for msg in messages), f"Slack message missing for {name}"
+    for token in includes:
+        assert any(token in msg for msg in messages), f"Slack message missing {token}"
+
+    for token in excludes:
+        assert all(token not in msg for msg in messages), f"Slack message unexpectedly contains {token}"

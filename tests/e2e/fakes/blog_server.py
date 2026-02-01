@@ -1,6 +1,8 @@
 import argparse
+from enum import Enum
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from typing import ClassVar
+from urllib.parse import parse_qs, urlparse
 
 RSS_HTML = b"""\
 <!DOCTYPE html>
@@ -11,7 +13,7 @@ RSS_HTML = b"""\
 </html>
 """
 
-RSS_FEED = b"""\
+RSS_FEED_BASELINE = b"""\
 <?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
     <channel>
@@ -34,23 +36,63 @@ RSS_FEED = b"""\
 </rss>
 """
 
+RSS_FEED_NEW_ARTICLE = b"""\
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+    <channel>
+        <title>Example Blog</title>
+        <link>https://example.com</link>
+        <description>A sample blog</description>
+        <item>
+            <title>Article 1</title>
+            <link>https://example.com/article-1</link>
+            <guid>article-1-guid</guid>
+            <pubDate>Mon, 01 Jan 2024 10:00:00 GMT</pubDate>
+        </item>
+        <item>
+            <title>Article 2</title>
+            <link>https://example.com/article-2</link>
+            <guid>article-2-guid</guid>
+            <pubDate>Tue, 02 Jan 2024 10:00:00 GMT</pubDate>
+        </item>
+        <item>
+            <title>Article 3</title>
+            <link>https://example.com/article-3</link>
+            <guid>article-3-guid</guid>
+            <pubDate>Wed, 03 Jan 2024 10:00:00 GMT</pubDate>
+        </item>
+    </channel>
+</rss>
+"""
 
-def _build_rss_routes() -> dict[str, tuple[str, bytes]]:
+
+class Mode(Enum):
+    BASELINE = "baseline"
+    NEW_ARTICLE = "new-article"
+
+
+def _build_rss_routes(mode: Mode) -> dict[str, tuple[str, bytes]]:
+    feed = RSS_FEED_NEW_ARTICLE if mode is Mode.NEW_ARTICLE else RSS_FEED_BASELINE
     return {
         "/": ("text/html", RSS_HTML),
-        "/feed.xml": ("application/rss+xml", RSS_FEED),
+        "/feed.xml": ("application/rss+xml", feed),
     }
 
 
-def _build_sitemap_routes(port: int) -> dict[str, tuple[str, bytes]]:
+def _build_sitemap_routes(port: int, mode: Mode) -> dict[str, tuple[str, bytes]]:
     base = f"http://127.0.0.1:{port}"
     robots_txt = f"Sitemap: {base}/sitemap.xml\n".encode()
+    urls = [
+        f"{base}/posts/hello-world",
+        f"{base}/posts/second-post",
+    ]
+    if mode is Mode.NEW_ARTICLE:
+        urls.append(f"{base}/posts/third-post")
     sitemap_xml = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-        f"  <url><loc>{base}/posts/hello-world</loc></url>\n"
-        f"  <url><loc>{base}/posts/second-post</loc></url>\n"
-        "</urlset>\n"
+        + "".join(f"  <url><loc>{url}</loc></url>\n" for url in urls)
+        + "</urlset>\n"
     ).encode()
     return {
         "/": ("text/html", b"<html><body>no feed</body></html>"),
@@ -61,10 +103,18 @@ def _build_sitemap_routes(port: int) -> dict[str, tuple[str, bytes]]:
 
 class Handler(SimpleHTTPRequestHandler):
     _routes: ClassVar[dict[str, tuple[str, bytes]]] = {}
+    _mode: ClassVar[Mode] = Mode.BASELINE
+    _scenario: ClassVar[str] = "rss"
 
     @classmethod
-    def set_routes(cls, routes: dict[str, tuple[str, bytes]]) -> None:
-        cls._routes = routes
+    def configure(cls, *, scenario: str, port: int) -> None:
+        cls._scenario = scenario
+        cls._routes = _build_rss_routes(cls._mode) if scenario == "rss" else _build_sitemap_routes(port, cls._mode)
+
+    @classmethod
+    def set_mode(cls, *, mode: Mode, port: int) -> None:
+        cls._mode = mode
+        cls._routes = _build_rss_routes(mode) if cls._scenario == "rss" else _build_sitemap_routes(port, mode)
 
     def do_GET(self) -> None:
         route = self._routes.get(self.path)
@@ -80,6 +130,23 @@ class Handler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def do_POST(self) -> None:
+        parsed = urlparse(self.path)
+        if parsed.path != "/_control/set-mode":
+            self.send_error(404)
+            return
+        params = parse_qs(parsed.query)
+        mode_raw = params.get("mode", [None])[0]
+        try:
+            mode = Mode(mode_raw)
+        except ValueError:
+            self.send_error(400)
+            return
+        self.set_mode(mode=mode, port=self.server.server_address[1])
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"ok")
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -89,7 +156,7 @@ def main() -> None:
     server = HTTPServer(("127.0.0.1", 0), Handler)
     port = server.server_address[1]
 
-    Handler.set_routes(_build_rss_routes() if args.scenario == "rss" else _build_sitemap_routes(port))
+    Handler.configure(scenario=args.scenario, port=port)
 
     print(port, flush=True)  # noqa: T201 — stdout is the IPC channel to the test harness
     server.serve_forever()
