@@ -41,7 +41,7 @@ class BlogWatcher:
             result = await self._detector.check(blog)
             self._persist_result(result)
             if result.changed:
-                await self._notifier.send(Notification(title=f"Blog updated: {blog.name}", body=blog.url, url=blog.url))
+                await self._notifier.send(Notification(title=f"Blog updated: {blog.name}", body=blog.name, url=blog.url))
                 logger.info("change_detected", blog_id=result.blog_id, url=blog.url)
         logger.info("watch_cycle_completed", blogs=len(self._config.blogs))
 

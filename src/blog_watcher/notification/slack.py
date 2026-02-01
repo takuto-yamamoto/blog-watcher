@@ -35,7 +35,28 @@ class SlackNotifier(Notifier):
 
     @staticmethod
     def _build_payload(notification: Notification) -> dict[str, object]:
-        text = f"*{notification.title}*\n{notification.body}"
+        blocks: list[dict[str, object]] = [
+            {
+                "type": "header",
+                "text": {"type": "plain_text", "text": notification.title},
+            },
+        ]
         if notification.url is not None:
-            text += f"\n<{notification.url}>"
-        return {"text": text}
+            blocks.append(
+                {
+                    "type": "section",
+                    "text": {"type": "mrkdwn", "text": f"<{notification.url}|{notification.body}>"},
+                },
+            )
+        else:
+            blocks.append(
+                {
+                    "type": "section",
+                    "text": {"type": "mrkdwn", "text": notification.body},
+                },
+            )
+        # fallback for non-block-capable clients
+        fallback = notification.title
+        if notification.url is not None:
+            fallback += f" - <{notification.url}>"
+        return {"text": fallback, "blocks": blocks}

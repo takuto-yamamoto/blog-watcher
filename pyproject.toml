@@ -113,6 +113,12 @@ integ = "pytest -n auto -m integration"
 e2e = "pytest -n auto -m e2e"
 slow = "pytest -n auto -m slow"
 
+[tool.hatch.envs.e2e]
+dependency-groups = ["test"]
+
+[tool.hatch.envs.e2e.scripts]
+rss = "pytest tests/e2e/test_rss.py -v --no-cov"
+
 [tool.hatch.envs.check]
 skip-install = true
 dependency-groups = ["check", "test"]

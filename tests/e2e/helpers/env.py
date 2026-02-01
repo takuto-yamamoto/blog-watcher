@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 
 @dataclass(frozen=True)
-class SlackEnv:
+class SlackConfig:
     webhook_url: str
     channel_id: str
     bot_token: str
@@ -14,7 +14,7 @@ class SlackEnv:
 
 @dataclass(frozen=True)
 class E2eEnv:
-    slack: SlackEnv
+    slack: SlackConfig
 
 
 def _require_env(key: str) -> str:
@@ -26,12 +26,12 @@ def _require_env(key: str) -> str:
 
 
 def load_env() -> E2eEnv:
-    env_path = Path(__file__).resolve().parents[3] / ".env"
+    env_path = Path(__file__).resolve().parent.parent / ".env"
     if env_path.exists():
         load_dotenv(env_path)
 
     return E2eEnv(
-        slack=SlackEnv(
+        slack=SlackConfig(
             webhook_url=_require_env("SLACK_WEBHOOK_URL"),
             channel_id=_require_env("SLACK_CHANNEL_ID"),
             bot_token=_require_env("SLACK_BOT_TOKEN"),

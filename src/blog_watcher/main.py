@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING, Annotated
 
 import httpx
@@ -18,7 +19,6 @@ from blog_watcher.storage import BlogStateRepository, CheckHistoryRepository, Da
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
-    from pathlib import Path
 
 logger = get_logger(__name__)
 
@@ -35,10 +35,10 @@ class ApplicationComponents:
 
 
 @asynccontextmanager
-async def create_application(config_path: Path) -> AsyncIterator[ApplicationComponents]:
+async def create_application(config_path: Path, db_path: Path) -> AsyncIterator[ApplicationComponents]:
     config = load_config(config_path)
 
-    db = Database(_default_db_path(config_path))
+    db = Database(db_path)
     db.initialize()
 
     state_repo = BlogStateRepository(db)
@@ -70,32 +70,29 @@ async def create_application(config_path: Path) -> AsyncIterator[ApplicationComp
         db.close()
 
 
-def _default_db_path(config_path: Path) -> Path:
-    return config_path.with_suffix(".sqlite")
-
-
 @app.command()
 def run(
-    config: Annotated[Path, typer.Option(param_decls=["-c", "--config"])],
-    once: Annotated[bool, typer.Option(default=False, param_decls=["--once"])],
+    config: Annotated[Path, typer.Option("-c", "--config")],
+    once: Annotated[bool, typer.Option("--once", is_flag=True)],
+    db_path: Annotated[Path, typer.Option("--db-path")] = Path("blog_states.sqlite"),
 ) -> None:
     configure_logging()
     try:
         if once:
-            asyncio.run(_run_once(config))
+            asyncio.run(_run_once(config, db_path))
         else:
-            asyncio.run(_run_scheduler(config))
+            asyncio.run(_run_scheduler(config, db_path))
     except ConfigError as exc:
         raise typer.Exit(code=1) from exc
 
 
-async def _run_once(config_path: Path) -> None:
-    async with create_application(config_path) as app_state:
+async def _run_once(config_path: Path, db_path: Path) -> None:
+    async with create_application(config_path, db_path) as app_state:
         await app_state.watcher.check_all()
 
 
-async def _run_scheduler(config_path: Path) -> None:
-    async with create_application(config_path) as app_state:
+async def _run_scheduler(config_path: Path, db_path: Path) -> None:
+    async with create_application(config_path, db_path) as app_state:
         await app_state.scheduler.start()
         logger.info("scheduler_started", interval_seconds=60)
         try:

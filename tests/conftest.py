@@ -18,6 +18,10 @@ def read_fixture(path: str) -> str:
     return fixture_path(path).read_text(encoding="utf-8")
 
 
+def read_fixture_byte(path: str) -> bytes:
+    return fixture_path(path).read_bytes()
+
+
 # Configure Hypothesis global settings
 settings.register_profile(
     "dev",

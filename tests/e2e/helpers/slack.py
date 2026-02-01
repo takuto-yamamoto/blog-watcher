@@ -1,15 +1,15 @@
 import httpx
 
-from tests.e2e.helpers.env import E2eEnv
+from tests.e2e.helpers.env import SlackConfig
 
 SLACK_CONVERSATIONS_HISTORY_URL = "https://slack.com/api/conversations.history"
 
 
-def list_messages(env: E2eEnv, *, limit: int = 5) -> list[str]:
+def list_messages(config: SlackConfig, *, limit: int = 5) -> list[str]:
     response = httpx.get(
         SLACK_CONVERSATIONS_HISTORY_URL,
-        headers={"Authorization": f"Bearer {env.slack.bot_token}"},
-        params={"channel": env.slack.channel_id, "limit": limit},
+        headers={"Authorization": f"Bearer {config.bot_token}"},
+        params={"channel": config.channel_id, "limit": limit},
     )
     response.raise_for_status()
 

@@ -20,14 +20,34 @@ async def notifier() -> AsyncIterator[SlackNotifier]:
 @pytest.mark.unit
 class TestSlackNotifier:
     @pytest.mark.parametrize(
-        ("url", "expected_text"),
+        ("url", "expected_fallback", "expected_blocks"),
         [
-            ("https://example.com/post", "*New Post*\nA new article.\n<https://example.com/post>"),
-            (None, "*New Post*\nA new article."),
+            (
+                "https://example.com/post",
+                "New Post - <https://example.com/post>",
+                [
+                    {"type": "header", "text": {"type": "plain_text", "text": "New Post"}},
+                    {"type": "section", "text": {"type": "mrkdwn", "text": "<https://example.com/post|A new article.>"}},
+                ],
+            ),
+            (
+                None,
+                "New Post",
+                [
+                    {"type": "header", "text": {"type": "plain_text", "text": "New Post"}},
+                    {"type": "section", "text": {"type": "mrkdwn", "text": "A new article."}},
+                ],
+            ),
         ],
     )
     @respx.mock
-    async def test_send_posts_expected_payload(self, notifier: SlackNotifier, url: str | None, expected_text: str) -> None:
+    async def test_send_posts_expected_payload(
+        self,
+        notifier: SlackNotifier,
+        url: str | None,
+        expected_fallback: str,
+        expected_blocks: list[dict[str, object]],
+    ) -> None:
         route = respx.post(WEBHOOK_URL).mock(return_value=httpx.Response(200, text="ok"))
         notification = Notification(title="New Post", body="A new article.", url=url)
 
@@ -35,7 +55,8 @@ class TestSlackNotifier:
 
         payload = json.loads(route.calls[0].request.content)
         assert route.call_count == 1
-        assert payload["text"] == expected_text
+        assert payload["text"] == expected_fallback
+        assert payload["blocks"] == expected_blocks
 
     @respx.mock
     async def test_send_retries_on_server_error(self, notifier: SlackNotifier) -> None:
