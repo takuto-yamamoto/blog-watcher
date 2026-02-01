@@ -38,6 +38,23 @@ def assert_blog_states_populated_sitemap(blog_states: list[BlogStateRow]) -> Non
         assert state.consecutive_errors == 0, f"consecutive_errors not zero for {state.blog_id}"
 
 
+def assert_no_change_on_rerun(before: list[BlogStateRow], after: list[BlogStateRow]) -> None:
+    before_by_id = {s.blog_id: s for s in before}
+    after_by_id = {s.blog_id: s for s in after}
+
+    assert before_by_id.keys() == after_by_id.keys(), "blog_id set changed between runs"
+
+    for blog_id, prev in before_by_id.items():
+        curr = after_by_id[blog_id]
+        assert curr.last_changed_at == prev.last_changed_at, (
+            f"last_changed_at changed for {blog_id}: {prev.last_changed_at} -> {curr.last_changed_at}"
+        )
+        assert curr.feed_url == prev.feed_url, f"feed_url changed for {blog_id}"
+        assert curr.sitemap_url == prev.sitemap_url, f"sitemap_url changed for {blog_id}"
+        assert curr.url_fingerprint == prev.url_fingerprint, f"url_fingerprint changed for {blog_id}"
+        assert curr.consecutive_errors == 0, f"consecutive_errors not zero for {blog_id} after rerun"
+
+
 def assert_slack_notifications_sent(config: SlackConfig, blogs: list[BlogEntry]) -> None:
     messages = list_messages(config)
     assert messages, "No slack messages found"

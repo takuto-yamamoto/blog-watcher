@@ -14,6 +14,7 @@ class BlogStateRow:
     last_checked_at: str | None
     url_fingerprint: str | None
     feed_url: str | None
+    sitemap_url: str | None
     recent_entry_keys: str | None
     last_changed_at: str | None
     consecutive_errors: int
@@ -30,6 +31,7 @@ def list_blog_states(db_path: Path) -> list[BlogStateRow]:
                 last_checked_at=r["last_checked_at"],
                 url_fingerprint=r["url_fingerprint"],
                 feed_url=r["feed_url"],
+                sitemap_url=r["sitemap_url"],
                 recent_entry_keys=r["recent_entry_keys"],
                 last_changed_at=r["last_changed_at"],
                 consecutive_errors=r["consecutive_errors"],
