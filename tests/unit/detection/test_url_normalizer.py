@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import pytest
 from hypothesis import given
-from tests.test_utils.strategies import url_strategy, url_with_tracking_params_strategy
 
 from blog_watcher.detection.urls.normalizer import NormalizationConfig, normalize_url, normalize_urls
+from tests.test_utils.strategies import url_strategy, url_with_tracking_params_strategy
 
 
-@pytest.mark.unit
-@pytest.mark.property_based
+@pytest.mark.pbt
 @given(url=url_strategy())
 def test_normalize_url_is_idempotent(url: str) -> None:
     config = NormalizationConfig()
@@ -19,8 +18,7 @@ def test_normalize_url_is_idempotent(url: str) -> None:
     assert normalized_once == normalized_twice
 
 
-@pytest.mark.unit
-@pytest.mark.property_based
+@pytest.mark.pbt
 @given(url=url_strategy())
 def test_normalize_url_produces_lowercase_scheme(url: str) -> None:
     config = NormalizationConfig()
@@ -30,8 +28,7 @@ def test_normalize_url_produces_lowercase_scheme(url: str) -> None:
     assert normalized.startswith(("http://", "https://"))
 
 
-@pytest.mark.unit
-@pytest.mark.property_based
+@pytest.mark.pbt
 @given(url=url_strategy())
 def test_normalize_url_produces_lowercase_host(url: str) -> None:
     config = NormalizationConfig(lowercase_host=True)
@@ -42,8 +39,7 @@ def test_normalize_url_produces_lowercase_host(url: str) -> None:
     assert host == host.lower()
 
 
-@pytest.mark.unit
-@pytest.mark.property_based
+@pytest.mark.pbt
 @given(url=url_with_tracking_params_strategy())
 def test_normalize_url_removes_tracking_parameters(url: str) -> None:
     config = NormalizationConfig(strip_tracking_params=True)
@@ -55,8 +51,7 @@ def test_normalize_url_removes_tracking_parameters(url: str) -> None:
         assert param not in normalized
 
 
-@pytest.mark.unit
-@pytest.mark.property_based
+@pytest.mark.pbt
 @given(url=url_strategy())
 def test_normalize_url_removes_fragments(url: str) -> None:
     config = NormalizationConfig(strip_fragments=True)
@@ -66,7 +61,6 @@ def test_normalize_url_removes_fragments(url: str) -> None:
     assert "#" not in normalized
 
 
-@pytest.mark.unit
 @pytest.mark.parametrize(
     ("relative_url", "base_url", "expected_output"),
     [
@@ -104,7 +98,6 @@ def test_normalize_url_resolves_relative_urls(relative_url: str, base_url: str, 
     assert result == expected_output
 
 
-@pytest.mark.unit
 @pytest.mark.parametrize(
     ("input_url", "expected_output"),
     [
@@ -128,7 +121,6 @@ def test_normalize_url_converts_idn_to_punycode(input_url: str, expected_output:
     assert result == expected_output
 
 
-@pytest.mark.unit
 @pytest.mark.parametrize(
     ("input_url", "expected_output"),
     [
@@ -152,7 +144,6 @@ def test_normalize_url_handles_percent_encoding(input_url: str, expected_output:
     assert result == expected_output
 
 
-@pytest.mark.unit
 @pytest.mark.parametrize(
     "malformed_url",
     [
@@ -170,7 +161,6 @@ def test_normalize_url_with_malformed_url_raises_error(malformed_url: str) -> No
         normalize_url(malformed_url, config=config)
 
 
-@pytest.mark.unit
 @pytest.mark.parametrize(
     ("input_url", "expected_output"),
     [
@@ -194,7 +184,6 @@ def test_normalize_url_removes_trailing_slash(input_url: str, expected_output: s
     assert result == expected_output
 
 
-@pytest.mark.unit
 @pytest.mark.parametrize(
     ("input_url", "expected_output"),
     [
@@ -223,7 +212,6 @@ def test_normalize_url_forces_https(input_url: str, expected_output: str) -> Non
 # ============================================================================
 
 
-@pytest.mark.unit
 def test_normalize_urls_deduplicates_identical_urls() -> None:
     urls = [
         "https://example.com/page1",
@@ -243,7 +231,6 @@ def test_normalize_urls_deduplicates_identical_urls() -> None:
     assert "https://example.com/page3" in result
 
 
-@pytest.mark.unit
 def test_normalize_urls_with_empty_list_returns_empty_list() -> None:
     urls: list[str] = []
     base_url = "https://example.com"
@@ -254,7 +241,6 @@ def test_normalize_urls_with_empty_list_returns_empty_list() -> None:
     assert result == []
 
 
-@pytest.mark.unit
 def test_normalize_url_idna_encoding_failure() -> None:
     config = NormalizationConfig()
 
@@ -262,7 +248,6 @@ def test_normalize_url_idna_encoding_failure() -> None:
         normalize_url("http://\u200b.com", config=config)
 
 
-@pytest.mark.unit
 @pytest.mark.parametrize(
     ("input_url", "expected_output"),
     [
@@ -281,7 +266,6 @@ def test_normalize_url_strip_tracking_from_fragment_variants(input_url: str, exp
     assert result == expected_output
 
 
-@pytest.mark.unit
 def test_normalize_url_strip_fragments_empty_fragment() -> None:
     input_url = "https://example.com/page#"
     config = NormalizationConfig(strip_fragments=True)
@@ -291,7 +275,6 @@ def test_normalize_url_strip_fragments_empty_fragment() -> None:
     assert result == "https://example.com/page"
 
 
-@pytest.mark.unit
 def test_normalize_url_with_port() -> None:
     input_url = "https://example.com:8080/path"
     config = NormalizationConfig()
@@ -301,7 +284,6 @@ def test_normalize_url_with_port() -> None:
     assert result == "https://example.com:8080/path"
 
 
-@pytest.mark.unit
 def test_normalize_url_hostname_none_error() -> None:
     config = NormalizationConfig()
 
@@ -309,7 +291,6 @@ def test_normalize_url_hostname_none_error() -> None:
         normalize_url("ftp://example.com", config=config)
 
 
-@pytest.mark.unit
 def test_normalize_url_fragment_ampersand_query_no_equals_keeps_anchor() -> None:
     input_url = "https://example.com/page#anchor&utm_source=test&param=value"
     config = NormalizationConfig(strip_tracking_params=True)
@@ -321,7 +302,6 @@ def test_normalize_url_fragment_ampersand_query_no_equals_keeps_anchor() -> None
     assert "param=value" in result
 
 
-@pytest.mark.unit
 @pytest.mark.parametrize(
     ("input_url", "expected_output"),
     [

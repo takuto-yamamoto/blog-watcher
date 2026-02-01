@@ -1,9 +1,10 @@
 from tests.e2e.helpers.config import load_blog_config, write_temp_config
 from tests.e2e.helpers.database import list_blog_states
 from tests.e2e.helpers.env import SlackConfig, load_env
-from tests.e2e.helpers.server import start_fake_server
+from tests.e2e.helpers.server import Scenario, start_fake_server
 
 __all__ = [
+    "Scenario",
     "SlackConfig",
     "list_blog_states",
     "load_blog_config",

@@ -2,9 +2,9 @@ from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
-from tests.test_utils.helpers import fixture_path
 
 from blog_watcher.config import ConfigError, load_config
+from tests.test_utils.helpers import fixture_path
 
 
 def _has_loc(error: ValidationError, expected: tuple[object, ...]) -> bool:

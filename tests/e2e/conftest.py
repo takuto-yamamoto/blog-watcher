@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from tests.e2e.helpers import load_env, start_fake_server, write_temp_config
+from tests.e2e.helpers.server import Scenario
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -22,16 +23,31 @@ def env() -> E2eEnv:
 
 
 @pytest.fixture
-def fake_server() -> Generator[int, None, None]:
-    proc, port = start_fake_server()
+def fake_rss_server() -> Generator[int, None, None]:
+    proc, port = start_fake_server(Scenario.RSS)
     yield port
     proc.terminate()
     proc.wait()
 
 
 @pytest.fixture
-def tmp_config(fake_server: int) -> Generator[Path, None, None]:
-    path = write_temp_config(fake_server)
+def fake_sitemap_server() -> Generator[int, None, None]:
+    proc, port = start_fake_server(Scenario.SITEMAP)
+    yield port
+    proc.terminate()
+    proc.wait()
+
+
+@pytest.fixture
+def tmp_rss_config(fake_rss_server: int) -> Generator[Path, None, None]:
+    path = write_temp_config(fake_rss_server, Scenario.RSS)
+    yield path
+    path.unlink(missing_ok=True)
+
+
+@pytest.fixture
+def tmp_sitemap_config(fake_sitemap_server: int) -> Generator[Path, None, None]:
+    path = write_temp_config(fake_sitemap_server, Scenario.SITEMAP)
     yield path
     path.unlink(missing_ok=True)
 

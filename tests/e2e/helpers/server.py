@@ -1,14 +1,19 @@
 import subprocess
 import sys
+from enum import Enum
 from pathlib import Path
 
-E2E_ROOT = Path(__file__).resolve().parent.parent
-FAKE_SERVER_SCRIPT = E2E_ROOT / "fakes" / "blog_server.py"
+FAKE_SERVER_SCRIPT = Path(__file__).resolve().parent.parent / "fakes" / "blog_server.py"
 
 
-def start_fake_server() -> tuple[subprocess.Popen[str], int]:
+class Scenario(Enum):
+    RSS = "rss"
+    SITEMAP = "sitemap"
+
+
+def start_fake_server(scenario: Scenario) -> tuple[subprocess.Popen[str], int]:
     proc = subprocess.Popen(
-        [sys.executable, str(FAKE_SERVER_SCRIPT)],
+        [sys.executable, str(FAKE_SERVER_SCRIPT), "--scenario", scenario.value],
         stdout=subprocess.PIPE,
         text=True,
     )

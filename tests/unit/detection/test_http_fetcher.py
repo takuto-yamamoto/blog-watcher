@@ -13,7 +13,6 @@ async def fetcher() -> AsyncIterator[HttpFetcher]:
         yield HttpFetcher(client)
 
 
-@pytest.mark.unit
 class TestHttpFetcher:
     @respx.mock
     async def test_fetch_success_returns_content(self, fetcher: HttpFetcher) -> None:

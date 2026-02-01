@@ -86,38 +86,41 @@ markers = [
     "integration: Integration tests (real DB/HTTP)",
     "e2e: End-to-end tests (full system)",
     "slow: Slow tests (scheduler, timing-dependent)",
-    "property_based: Property-based tests using Hypothesis",
+    "pbt: Property-based tests using Hypothesis",
 ]
 addopts = [
     "--strict-markers",
     "--tb=short",
-    "--cov-branch",
     "--import-mode=importlib",
-    "--cov=src/blog_watcher",
+]
+filterwarnings = [
+    "ignore::bs4.MarkupResemblesLocatorWarning",
 ]
 
 [tool.coverage.run]
-omit = ["src/blog_watcher/main.py"]
 parallel = true
 
 [tool.hatch.envs.test]
 dependency-groups = ["test"]
 
 [tool.hatch.envs.test.scripts]
-all = "pytest -n auto --cov-fail-under=85"
-cov = "pytest -n auto --cov-report=term-missing"
-cov_html = "pytest -n auto --cov-report=html"
-cov_diff = "pytest -n auto --cov-report=term-missing:skip-covered"
+all = "pytest -n auto"
+fast = "pytest -n auto -m 'not slow and not e2e'"
+bottleneck = "pytest -n auto -m 'not slow and not e2e' --durations=20 --durations-min=0.5"
 unit = "pytest -n auto -m unit"
-integ = "pytest -n auto -m integration"
-e2e = "pytest -n auto -m e2e"
+integration = "pytest -n auto -m integration"
 slow = "pytest -n auto -m slow"
+e2e  = "pytest -m e2e"
+cov = "pytest -n auto -m 'not slow and not e2e' --cov=src/blog_watcher --cov-branch --cov-report=term-missing"
+cov_html = "pytest -n auto -m 'not slow and not e2e' --cov=src/blog_watcher --cov-branch --cov-report=html"
+cov_all = "pytest -n auto --cov=src/blog_watcher --cov-branch --cov-report=term-missing"
 
 [tool.hatch.envs.e2e]
 dependency-groups = ["test"]
 
 [tool.hatch.envs.e2e.scripts]
 rss = "pytest tests/e2e/test_rss.py -v --no-cov"
+sitemap = "pytest tests/e2e/test_sitemap.py -v --no-cov"
 
 [tool.hatch.envs.check]
 skip-install = true

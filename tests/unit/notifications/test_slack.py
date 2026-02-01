@@ -17,7 +17,6 @@ async def notifier() -> AsyncIterator[SlackNotifier]:
         yield SlackNotifier(client, SlackConfig(webhook_url=WEBHOOK_URL))
 
 
-@pytest.mark.unit
 class TestSlackNotifier:
     @pytest.mark.parametrize(
         ("url", "expected_fallback", "expected_blocks"),

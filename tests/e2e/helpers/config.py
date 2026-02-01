@@ -3,6 +3,8 @@ import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
+from tests.e2e.helpers.server import Scenario
+
 
 @dataclass(frozen=True)
 class BlogEntry:
@@ -17,13 +19,13 @@ def load_blog_config(config_path: Path) -> list[BlogEntry]:
     return [BlogEntry(name=b["name"], url=b["url"]) for b in raw["blogs"]]
 
 
-def write_temp_config(port: int) -> Path:
+def write_temp_config(port: int, scenario: Scenario) -> Path:
     config_text = f"""
 [slack]
 webhook_url = "${{SLACK_WEBHOOK_URL}}"
 
 [[blogs]]
-name = "Dummy Blog for E2E Test"
+name = "E2E Blog ({scenario.value})"
 url = "http://127.0.0.1:{port}"
 """
 

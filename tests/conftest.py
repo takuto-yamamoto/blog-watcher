@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
@@ -62,3 +63,21 @@ if os.getenv("CI"):
     settings.load_profile("ci")
 else:
     settings.load_profile("dev")
+
+
+_LEVEL_MARKERS = {
+    "unit": pytest.mark.unit,
+    "integration": pytest.mark.integration,
+    "e2e": pytest.mark.e2e,
+}
+
+
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+    for item in items:
+        rel = item.path.relative_to(Path(__file__).resolve().parent) if item.path else None
+        if rel is None:
+            continue
+        for level, marker in _LEVEL_MARKERS.items():
+            if rel.parts[0] == level:
+                item.add_marker(marker)
+                break

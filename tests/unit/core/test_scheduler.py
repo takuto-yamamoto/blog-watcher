@@ -1,7 +1,7 @@
 import pytest
-from tests.test_utils.mocks import CountingWatcher
 
 from blog_watcher.core import WatcherScheduler
+from tests.test_utils.mocks import CountingWatcher
 
 
 class TestWatcherSchedulerValidation:

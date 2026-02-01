@@ -30,6 +30,14 @@ def assert_blog_states_populated(blog_states: list[BlogStateRow]) -> None:
         assert state.consecutive_errors == 0, f"consecutive_errors not zero for {state.blog_id}"
 
 
+def assert_blog_states_populated_sitemap(blog_states: list[BlogStateRow]) -> None:
+    for state in blog_states:
+        assert state.last_checked_at is not None, f"last_checked_at missing for {state.blog_id}"
+        assert state.url_fingerprint is not None, f"url_fingerprint missing for {state.blog_id}"
+        assert state.last_changed_at is not None, f"last_changed_at missing for {state.blog_id}"
+        assert state.consecutive_errors == 0, f"consecutive_errors not zero for {state.blog_id}"
+
+
 def assert_slack_notifications_sent(config: SlackConfig, blogs: list[BlogEntry]) -> None:
     messages = list_messages(config)
     assert messages, "No slack messages found"
