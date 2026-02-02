@@ -103,7 +103,6 @@ def _build_rss_routes(mode: Mode) -> dict[str, tuple[str, bytes]]:
 
 def _build_sitemap_routes(port: int, mode: Mode) -> dict[str, tuple[str, bytes]]:
     base = f"http://127.0.0.1:{port}"
-    robots_txt = f"Sitemap: {base}/sitemap.xml\n".encode()
     urls = [
         f"{base}/posts/hello-world",
         f"{base}/posts/second-post",
@@ -120,11 +119,21 @@ def _build_sitemap_routes(port: int, mode: Mode) -> dict[str, tuple[str, bytes]]
 {url_entries}</urlset>
 """.encode()
 
-    return {
-        "/": ("text/html", b"<html><body>no feed</body></html>"),
-        "/robots.txt": ("text/plain", robots_txt),
-        "/sitemap.xml": ("application/xml", sitemap_xml),
-    }
+    match mode:
+        case Mode.BASELINE | Mode.NEW_ARTICLE:
+            robots_txt = f"Sitemap: {base}/sitemap.xml\n".encode()
+            return {
+                "/": ("text/html", b"<html><body>no feed</body></html>"),
+                "/robots.txt": ("text/plain", robots_txt),
+                "/sitemap.xml": ("application/xml", sitemap_xml),
+            }
+        case Mode.FEED_MOVED:
+            robots_txt = f"Sitemap: {base}/sitemap_moved.xml\n".encode()
+            return {
+                "/": ("text/html", b"<html><body>no feed</body></html>"),
+                "/robots.txt": ("text/plain", robots_txt),
+                "/sitemap_moved.xml": ("application/xml", sitemap_xml),
+            }
 
 
 class Handler(SimpleHTTPRequestHandler):
