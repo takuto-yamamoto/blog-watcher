@@ -103,6 +103,31 @@ async def test_feed_rediscovers_when_cache_stale(
     assert result.feed_url == urls.feed
 
 
+async def test_feed_304_returns_not_changed(
+    blog: BlogConfig,
+) -> None:
+    urls = blog_urls(blog)
+    not_modified = FetchResultFactory.build(status_code=304, content=None, is_modified=False, etag='"abc"')
+    fetcher = FakeFetcher({urls.feed: not_modified})
+    previous_state = BlogStateFactory.build(
+        blog_id=blog.blog_id,
+        feed_url=urls.feed,
+        feed_etag='"abc"',
+        url_fingerprint="prev-fp",
+        recent_entry_keys='["e1","e2"]',
+        last_checked_at=datetime.now(UTC) - timedelta(days=1),
+    )
+    detector = FeedChangeDetector(fetcher=fetcher, config=DetectorConfig())
+
+    result = await detector.detect(FetchResultFactory.build(), blog.url, previous_state)
+
+    assert result.ok is True
+    assert result.changed is False
+    assert result.fingerprint == "prev-fp"
+    assert result.entry_keys == ("e1", "e2")
+    assert result.etag == '"abc"'
+
+
 async def test_feed_rediscovers_when_cached_url_fails(
     blog: BlogConfig,
     feed_link_html: FetchResult,

@@ -8,8 +8,12 @@ INSERT INTO blog_state (
     recent_entry_keys,
     last_checked_at,
     last_changed_at,
-    consecutive_errors
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    consecutive_errors,
+    feed_etag,
+    feed_last_modified,
+    sitemap_etag,
+    sitemap_last_modified
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(blog_id) DO UPDATE SET
     etag=excluded.etag,
     last_modified=excluded.last_modified,
@@ -19,4 +23,8 @@ ON CONFLICT(blog_id) DO UPDATE SET
     recent_entry_keys=excluded.recent_entry_keys,
     last_checked_at=excluded.last_checked_at,
     last_changed_at=excluded.last_changed_at,
-    consecutive_errors=excluded.consecutive_errors;
+    consecutive_errors=excluded.consecutive_errors,
+    feed_etag=excluded.feed_etag,
+    feed_last_modified=excluded.feed_last_modified,
+    sitemap_etag=excluded.sitemap_etag,
+    sitemap_last_modified=excluded.sitemap_last_modified;

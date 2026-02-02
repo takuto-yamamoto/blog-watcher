@@ -41,6 +41,10 @@ class BlogStateRepository:
                 state.last_checked_at.isoformat(),
                 state.last_changed_at.isoformat() if state.last_changed_at else None,
                 state.consecutive_errors,
+                state.feed_etag,
+                state.feed_last_modified,
+                state.sitemap_etag,
+                state.sitemap_last_modified,
             ),
         )
 
@@ -64,6 +68,10 @@ class BlogStateRepository:
             last_checked_at=datetime.fromisoformat(row["last_checked_at"]),
             last_changed_at=(datetime.fromisoformat(row["last_changed_at"]) if row["last_changed_at"] else None),
             consecutive_errors=row["consecutive_errors"],
+            feed_etag=row["feed_etag"],
+            feed_last_modified=row["feed_last_modified"],
+            sitemap_etag=row["sitemap_etag"],
+            sitemap_last_modified=row["sitemap_last_modified"],
         )
 
 

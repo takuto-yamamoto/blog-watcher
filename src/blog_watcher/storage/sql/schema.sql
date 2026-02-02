@@ -8,7 +8,11 @@ CREATE TABLE IF NOT EXISTS blog_state (
     recent_entry_keys TEXT,
     last_checked_at TEXT NOT NULL,
     last_changed_at TEXT,
-    consecutive_errors INTEGER NOT NULL DEFAULT 0
+    consecutive_errors INTEGER NOT NULL DEFAULT 0,
+    feed_etag TEXT,
+    feed_last_modified TEXT,
+    sitemap_etag TEXT,
+    sitemap_last_modified TEXT
 );
 
 CREATE TABLE IF NOT EXISTS check_history (

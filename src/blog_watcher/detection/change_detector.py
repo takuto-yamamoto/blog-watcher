@@ -28,6 +28,10 @@ class _CheckContext:
     entry_keys: tuple[str, ...]
     fingerprint: str
     sitemap_url: str | None
+    feed_etag: str | None = None
+    feed_last_modified: str | None = None
+    sitemap_etag: str | None = None
+    sitemap_last_modified: str | None = None
 
 
 class ChangeDetector:
@@ -43,8 +47,8 @@ class ChangeDetector:
         self._config = config or DetectorConfig()
 
     async def check(self, blog: BlogConfig) -> DetectionResult:
-        fetch_result = await self._fetch_html(blog.url)
         previous_state = self._state_repo.get(blog.blog_id)
+        fetch_result = await self._fetch_html(blog.url)
 
         feed_detector = FeedChangeDetector(fetcher=self._fetcher, config=self._config)
         feed_result = await feed_detector.detect(fetch_result, blog.url, previous_state)
@@ -70,6 +74,10 @@ class ChangeDetector:
             entry_keys=feed_result.entry_keys,
             fingerprint=effective_fingerprint,
             sitemap_url=sitemap_result.sitemap_url if sitemap_result is not None else None,
+            feed_etag=feed_result.etag,
+            feed_last_modified=feed_result.last_modified,
+            sitemap_etag=sitemap_result.etag if sitemap_result is not None else None,
+            sitemap_last_modified=sitemap_result.last_modified if sitemap_result is not None else None,
         )
 
         self._persist_state(context, changed=changed, previous_state=previous_state)
@@ -101,6 +109,10 @@ class ChangeDetector:
             last_checked_at=now,
             last_changed_at=now if changed else previous_state.last_changed_at if previous_state else None,
             consecutive_errors=0,
+            feed_etag=context.feed_etag,
+            feed_last_modified=context.feed_last_modified,
+            sitemap_etag=context.sitemap_etag,
+            sitemap_last_modified=context.sitemap_last_modified,
         )
         self._state_repo.upsert(new_state)
 

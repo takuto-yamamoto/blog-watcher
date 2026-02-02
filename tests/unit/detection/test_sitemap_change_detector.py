@@ -103,6 +103,29 @@ async def test_sitemap_rediscovers_when_cache_stale(robots_allow_all: FetchResul
     assert result.ok is True
 
 
+async def test_sitemap_304_returns_not_changed() -> None:
+    blog = BlogConfig(name="example", url="https://example.com")
+    urls_info = blog_urls(blog)
+    not_modified = FetchResultFactory.build(status_code=304, content=None, is_modified=False, etag='"xyz"')
+
+    fetcher = FakeFetcher({urls_info.sitemap: not_modified})
+    previous_state = BlogStateFactory.build(
+        blog_id=blog.blog_id,
+        sitemap_url=urls_info.sitemap,
+        sitemap_etag='"xyz"',
+        url_fingerprint="prev-sitemap-fp",
+        last_checked_at=datetime.now(UTC) - timedelta(days=1),
+    )
+    detector = SitemapChangeDetector(fetcher=fetcher, config=DetectorConfig())
+
+    result = await detector.detect(blog.url, previous_state)
+
+    assert result.ok is True
+    assert result.changed is False
+    assert result.fingerprint == "prev-sitemap-fp"
+    assert result.etag == '"xyz"'
+
+
 async def test_sitemap_rediscovers_when_cached_url_fails(robots_allow_all: FetchResult) -> None:
     blog = BlogConfig(name="example", url="https://example.com")
     urls_info = blog_urls(blog)

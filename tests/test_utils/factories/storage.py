@@ -21,6 +21,10 @@ class BlogStateFactory(Factory[BlogState]):
     last_checked_at = datetime(2024, 1, 1, tzinfo=UTC)
     last_changed_at = None
     consecutive_errors = 0
+    feed_etag = None
+    feed_last_modified = None
+    sitemap_etag = None
+    sitemap_last_modified = None
 
 
 class CheckHistoryFactory(Factory[CheckHistory]):

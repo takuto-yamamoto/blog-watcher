@@ -21,6 +21,8 @@ class FeedDetectionResult:
     fingerprint: str
     changed: bool
     ok: bool
+    etag: str | None = None
+    last_modified: str | None = None
 
 
 class FeedChangeDetector:
@@ -37,7 +39,7 @@ class FeedChangeDetector:
         discovery = detect_feed_urls(fetch_result.content, base_url)
 
         for feed_url in discovery.candidates:
-            parsed = await self._try_fetch_and_parse(feed_url)
+            parsed, fetch_result = await self._try_fetch_and_parse(feed_url)
             if parsed is None:
                 continue
             entry_keys = tuple(entry.id for entry in parsed.entries)
@@ -49,6 +51,8 @@ class FeedChangeDetector:
                 fingerprint=fingerprint,
                 changed=changed,
                 ok=True,
+                etag=fetch_result.etag,
+                last_modified=fetch_result.last_modified,
             )
 
         return FeedDetectionResult(
@@ -60,7 +64,22 @@ class FeedChangeDetector:
         )
 
     async def _try_cached_feed(self, feed_url: str, previous_state: BlogState | None) -> FeedDetectionResult | None:
-        parsed = await self._try_fetch_and_parse(feed_url)
+        etag = previous_state.feed_etag if previous_state else None
+        last_modified = previous_state.feed_last_modified if previous_state else None
+        fetch_result = await self._fetcher.fetch(feed_url, etag=etag, last_modified=last_modified)
+        if fetch_result.content is None:
+            if not fetch_result.is_modified and previous_state is not None:
+                return FeedDetectionResult(
+                    feed_url=feed_url,
+                    entry_keys=tuple(json.loads(previous_state.recent_entry_keys)) if previous_state.recent_entry_keys else (),
+                    fingerprint=previous_state.url_fingerprint or "",
+                    changed=False,
+                    ok=True,
+                    etag=fetch_result.etag or etag,
+                    last_modified=fetch_result.last_modified or last_modified,
+                )
+            return None
+        parsed = parse_feed(fetch_result.content, feed_url)
         if parsed is None:
             return None
         entry_keys = tuple(entry.id for entry in parsed.entries)
@@ -72,13 +91,15 @@ class FeedChangeDetector:
             fingerprint=fingerprint,
             changed=changed,
             ok=True,
+            etag=fetch_result.etag,
+            last_modified=fetch_result.last_modified,
         )
 
-    async def _try_fetch_and_parse(self, feed_url: str) -> ParsedFeed | None:
+    async def _try_fetch_and_parse(self, feed_url: str) -> tuple[ParsedFeed | None, FetchResult]:
         feed_result = await self._fetcher.fetch(feed_url)
         if feed_result.content is None:
-            return None
-        return parse_feed(feed_result.content, feed_url)
+            return None, feed_result
+        return parse_feed(feed_result.content, feed_url), feed_result
 
     def _detect_feed_changes(self, entry_keys: tuple[str, ...], previous_state: BlogState | None) -> bool:
         if not entry_keys or previous_state is None:

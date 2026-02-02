@@ -19,6 +19,10 @@ class BlogState:
     last_checked_at: datetime
     last_changed_at: datetime | None
     consecutive_errors: int = 0
+    feed_etag: str | None = None
+    feed_last_modified: str | None = None
+    sitemap_etag: str | None = None
+    sitemap_last_modified: str | None = None
 
     def __post_init__(self) -> None:
         if not self.blog_id:

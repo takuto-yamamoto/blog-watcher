@@ -17,7 +17,7 @@ from blog_watcher.observability import get_logger
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
-    from blog_watcher.detection.http_fetcher import Fetcher
+    from blog_watcher.detection.http_fetcher import Fetcher, FetchResult
     from blog_watcher.detection.models import DetectorConfig
     from blog_watcher.storage.models import BlogState
 
@@ -28,6 +28,8 @@ class SitemapDetectionResult:
     fingerprint: str | None
     changed: bool
     ok: bool
+    etag: str | None = None
+    last_modified: str | None = None
 
 
 class SitemapChangeDetector:
@@ -77,8 +79,19 @@ class SitemapChangeDetector:
         )
 
     async def _try_cached_sitemap(self, sitemap_url: str, previous_state: BlogState | None) -> SitemapDetectionResult | None:
-        parsed = await self._fetch_and_parse_sitemap(sitemap_url)
+        etag = previous_state.sitemap_etag if previous_state else None
+        last_modified = previous_state.sitemap_last_modified if previous_state else None
+        parsed, fetch_result = await self._fetch_and_parse_sitemap(sitemap_url, etag=etag, last_modified=last_modified)
         if parsed is None:
+            if fetch_result is not None and not fetch_result.is_modified and previous_state is not None:
+                return SitemapDetectionResult(
+                    sitemap_url=sitemap_url,
+                    fingerprint=previous_state.url_fingerprint,
+                    changed=False,
+                    ok=True,
+                    etag=fetch_result.etag or etag,
+                    last_modified=fetch_result.last_modified or last_modified,
+                )
             return None
 
         page_urls: list[str] = []
@@ -103,12 +116,14 @@ class SitemapChangeDetector:
             fingerprint=fingerprint,
             changed=changed,
             ok=True,
+            etag=fetch_result.etag if fetch_result else None,
+            last_modified=fetch_result.last_modified if fetch_result else None,
         )
 
     async def _probe_sitemap_candidates(self, candidates: list[str]) -> tuple[str | None, list[str]]:
         """Fetch and parse sitemap candidates, returning the first valid one."""
         for candidate in candidates:
-            parsed = await self._fetch_and_parse_sitemap(candidate)
+            parsed, _fetch_result = await self._fetch_and_parse_sitemap(candidate)
             if parsed is None:
                 continue
 
@@ -121,22 +136,28 @@ class SitemapChangeDetector:
             return candidate, page_urls
         return None, []
 
-    async def _fetch_and_parse_sitemap(self, url: str) -> ParsedSitemap | None:
+    async def _fetch_and_parse_sitemap(
+        self,
+        url: str,
+        *,
+        etag: str | None = None,
+        last_modified: str | None = None,
+    ) -> tuple[ParsedSitemap | None, FetchResult | None]:
         """Fetch a single sitemap URL and parse it."""
         try:
-            result = await self._fetcher.fetch(url)
+            result = await self._fetcher.fetch(url, etag=etag, last_modified=last_modified)
         except Exception:  # noqa: BLE001
             logger.debug("sitemap_fetch_failed", url=url)
-            return None
+            return None, None
         if result.content is None:
-            return None
-        return parse_sitemap(result.content, url)
+            return None, result
+        return parse_sitemap(result.content, url), result
 
     async def _resolve_sitemap_index(self, index: ParsedSitemap) -> list[str]:
         """Fetch child sitemaps from an index and collect page URLs."""
         page_urls: list[str] = []
         for child_url in index.page_urls:
-            child_parsed = await self._fetch_and_parse_sitemap(child_url)
+            child_parsed, _child_fetch = await self._fetch_and_parse_sitemap(child_url)
             if child_parsed is not None and not child_parsed.is_index:
                 page_urls.extend(child_parsed.page_urls)
         return page_urls

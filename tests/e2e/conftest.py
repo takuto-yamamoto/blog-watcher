@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import tempfile
 from typing import TYPE_CHECKING
 
 import pytest
@@ -12,9 +13,6 @@ if TYPE_CHECKING:
     from collections.abc import Generator
 
     from tests.e2e.helpers.env import E2eEnv
-
-
-DB_PATH = Path(__file__).resolve().parent / "blog_states.sqlite"
 
 
 @pytest.fixture(scope="session")
@@ -48,6 +46,5 @@ def fake_full_server() -> Generator[int, None, None]:
 
 @pytest.fixture
 def db_path() -> Generator[Path, None, None]:
-    DB_PATH.unlink(missing_ok=True)
-    yield DB_PATH
-    DB_PATH.unlink(missing_ok=True)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        yield Path(tmpdir) / "blog_states.sqlite"
