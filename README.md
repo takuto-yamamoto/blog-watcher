@@ -15,13 +15,24 @@ This project provides a streamlined experience specifically designed for monitor
 ## Installation
 
 ```bash
-# Installation instructions coming soon
+# Build a wheel (PEP 517)
+python -m build --wheel
+
+# Install from the built wheel
+python -m pip install dist/blog_watcher-0.1.0-py3-none-any.whl
+
+# Or install via pipx (isolated, recommended for CLI)
+pipx install dist/blog_watcher-0.1.0-py3-none-any.whl
 ```
 
 ## Usage
 
 ```bash
-# Usage instructions coming soon
+# Show CLI help
+blog-watcher --help
+
+# Run once with a config file and custom DB path
+blog-watcher -c path/to/config.toml --once --db-path blog_states.sqlite
 ```
 
 ## Author
@@ -30,4 +41,4 @@ takuto-yamamoto
 
 ## License
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
