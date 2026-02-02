@@ -46,7 +46,7 @@ class ChangeDetector:
         fetch_result = await self._fetch_html(blog.url)
         previous_state = self._state_repo.get(blog.blog_id)
 
-        feed_detector = FeedChangeDetector(fetcher=self._fetcher)
+        feed_detector = FeedChangeDetector(fetcher=self._fetcher, config=self._config)
         feed_result = await feed_detector.detect(fetch_result, blog.url, previous_state)
 
         sitemap_result = None

@@ -1,8 +1,21 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 
 from blog_watcher.detection.urls.normalizer import NormalizationConfig
+
+
+def is_cache_fresh(
+    last_checked_at: datetime | None,
+    ttl_days: int,
+    *,
+    now: datetime | None = None,
+) -> bool:
+    if last_checked_at is None:
+        return False
+    now = now or datetime.now(UTC)
+    return (now - last_checked_at) < timedelta(days=ttl_days)
 
 
 @dataclass(frozen=True, slots=True)
@@ -15,6 +28,7 @@ class DetectionResult:
 
 @dataclass(frozen=True, slots=True)
 class DetectorConfig:
+    cache_ttl_days: int = 7
     feed_max_entries: int = 20
     extract_selector: str = "a[href]"
     normalize_lowercase_host: bool = True

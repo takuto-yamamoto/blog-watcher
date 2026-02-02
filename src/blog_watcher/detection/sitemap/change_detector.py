@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
+from blog_watcher.detection.models import is_cache_fresh
 from blog_watcher.detection.sitemap.detector import (
     ParsedSitemap,
     detect_sitemap_urls,
@@ -35,6 +36,11 @@ class SitemapChangeDetector:
         self._config = config
 
     async def detect(self, base_url: str, previous_state: BlogState | None) -> SitemapDetectionResult:
+        if previous_state is not None and previous_state.sitemap_url and is_cache_fresh(previous_state.last_checked_at, self._config.cache_ttl_days):
+            cached = await self._try_cached_sitemap(previous_state.sitemap_url, previous_state)
+            if cached is not None:
+                return cached
+
         try:
             robots_txt = await self._fetch_robots_txt(base_url)
             candidates = detect_sitemap_urls(robots_txt, base_url)
@@ -57,6 +63,35 @@ class SitemapChangeDetector:
 
         norm_config = self._config.to_normalization_config()
         normalized = normalize_urls(all_page_urls, config=norm_config)
+        fingerprint = fingerprint_urls(normalized)
+
+        changed = False
+        if previous_state is not None and previous_state.url_fingerprint:
+            changed = previous_state.url_fingerprint != fingerprint
+
+        return SitemapDetectionResult(
+            sitemap_url=sitemap_url,
+            fingerprint=fingerprint,
+            changed=changed,
+            ok=True,
+        )
+
+    async def _try_cached_sitemap(self, sitemap_url: str, previous_state: BlogState | None) -> SitemapDetectionResult | None:
+        parsed = await self._fetch_and_parse_sitemap(sitemap_url)
+        if parsed is None:
+            return None
+
+        page_urls: list[str] = []
+        if parsed.is_index:
+            page_urls = await self._resolve_sitemap_index(parsed)
+        else:
+            page_urls = list(parsed.page_urls)
+
+        if not page_urls:
+            return None
+
+        norm_config = self._config.to_normalization_config()
+        normalized = normalize_urls(page_urls, config=norm_config)
         fingerprint = fingerprint_urls(normalized)
 
         changed = False
