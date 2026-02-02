@@ -80,6 +80,7 @@ class Mode(Enum):
     BASELINE = "baseline"
     NEW_ARTICLE = "new-article"
     FEED_MOVED = "feed-moved"
+    SITEMAP_CHANGED = "sitemap-changed"
 
 
 def _build_rss_routes(mode: Mode) -> dict[str, tuple[str, bytes]]:
@@ -99,6 +100,9 @@ def _build_rss_routes(mode: Mode) -> dict[str, tuple[str, bytes]]:
                 "/": ("text/html", RSS_FEED_MOVED),
                 "/feed_moved.xml": ("application/rss+xml", RSS_FEED_BASELINE),
             }
+        case _:
+            msg = f"unsupported mode for rss scenario: {mode}"
+            raise ValueError(msg)
 
 
 def _build_sitemap_routes(port: int, mode: Mode) -> dict[str, tuple[str, bytes]]:
@@ -116,7 +120,8 @@ def _build_sitemap_routes(port: int, mode: Mode) -> dict[str, tuple[str, bytes]]
     sitemap_xml = f"""\
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-{url_entries}</urlset>
+{url_entries}
+</urlset>
 """.encode()
 
     match mode:
@@ -134,6 +139,38 @@ def _build_sitemap_routes(port: int, mode: Mode) -> dict[str, tuple[str, bytes]]
                 "/robots.txt": ("text/plain", robots_txt),
                 "/sitemap_moved.xml": ("application/xml", sitemap_xml),
             }
+        case _:
+            msg = f"unsupported mode for sitemap scenario: {mode}"
+            raise ValueError(msg)
+
+
+def _build_full_routes(port: int, mode: Mode) -> dict[str, tuple[str, bytes]]:
+    base = f"http://127.0.0.1:{port}"
+    urls = [
+        f"{base}/posts/hello-world",
+        f"{base}/posts/second-post",
+    ]
+
+    if mode is Mode.SITEMAP_CHANGED:
+        urls.append(f"{base}/posts/third-post")
+
+    url_entries = "".join(f"  <url><loc>{u}</loc></url>\n" for u in urls)
+
+    sitemap_xml = f"""\
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+{url_entries}
+</urlset>
+""".encode()
+
+    robots_txt = f"Sitemap: {base}/sitemap.xml\n".encode()
+
+    return {
+        "/": ("text/html", RSS_HTML),
+        "/feed.xml": ("application/rss+xml", RSS_FEED_BASELINE),
+        "/robots.txt": ("text/plain", robots_txt),
+        "/sitemap.xml": ("application/xml", sitemap_xml),
+    }
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -142,14 +179,22 @@ class Handler(SimpleHTTPRequestHandler):
     _scenario: ClassVar[str] = "rss"
 
     @classmethod
+    def _build_routes(cls, mode: Mode, port: int) -> dict[str, tuple[str, bytes]]:
+        if cls._scenario == "rss":
+            return _build_rss_routes(mode)
+        if cls._scenario == "full":
+            return _build_full_routes(port, mode)
+        return _build_sitemap_routes(port, mode)
+
+    @classmethod
     def configure(cls, *, scenario: str, port: int) -> None:
         cls._scenario = scenario
-        cls._routes = _build_rss_routes(cls._mode) if scenario == "rss" else _build_sitemap_routes(port, cls._mode)
+        cls._routes = cls._build_routes(cls._mode, port)
 
     @classmethod
     def set_mode(cls, *, mode: Mode, port: int) -> None:
         cls._mode = mode
-        cls._routes = _build_rss_routes(mode) if cls._scenario == "rss" else _build_sitemap_routes(port, mode)
+        cls._routes = cls._build_routes(mode, port)
 
     def do_GET(self) -> None:
         route = self._routes.get(self.path)
@@ -189,7 +234,7 @@ class Handler(SimpleHTTPRequestHandler):
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--scenario", choices=["rss", "sitemap"], default="rss")
+    parser.add_argument("--scenario", choices=["rss", "sitemap", "full"], default="rss")
     args = parser.parse_args()
 
     server = HTTPServer(("127.0.0.1", 0), Handler)

@@ -39,6 +39,14 @@ def fake_sitemap_server() -> Generator[int, None, None]:
 
 
 @pytest.fixture
+def fake_full_server() -> Generator[int, None, None]:
+    proc, port = start_fake_server(Scenario.FULL)
+    yield port
+    proc.terminate()
+    proc.wait()
+
+
+@pytest.fixture
 def db_path() -> Generator[Path, None, None]:
     DB_PATH.unlink(missing_ok=True)
     yield DB_PATH

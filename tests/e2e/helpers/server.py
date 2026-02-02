@@ -12,12 +12,14 @@ FAKE_SERVER_SCRIPT = Path(__file__).resolve().parent.parent / "fakes" / "blog_se
 class Scenario(Enum):
     RSS = "rss"
     SITEMAP = "sitemap"
+    FULL = "full"
 
 
 class Mode(Enum):
     BASELINE = "baseline"
     NEW_ARTICLE = "new-article"
     FEED_MOVED = "feed-moved"
+    SITEMAP_CHANGED = "sitemap-changed"
 
 
 _CONTROL_ENDPOINT: Final[str] = "/_control/set-mode"
