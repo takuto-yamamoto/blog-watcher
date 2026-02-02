@@ -1,7 +1,7 @@
 import argparse
 from enum import Enum
 from http.server import HTTPServer, SimpleHTTPRequestHandler
-from typing import ClassVar
+from typing import Any, ClassVar, cast
 from urllib.parse import parse_qs, urlparse
 
 RSS_HTML = b"""\
@@ -66,17 +66,39 @@ RSS_FEED_NEW_ARTICLE = b"""\
 """
 
 
+RSS_FEED_MOVED = b"""\
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="alternate" type="application/rss+xml" href="/feed_moved.xml">
+</head>
+</html>
+"""
+
+
 class Mode(Enum):
     BASELINE = "baseline"
     NEW_ARTICLE = "new-article"
+    FEED_MOVED = "feed-moved"
 
 
 def _build_rss_routes(mode: Mode) -> dict[str, tuple[str, bytes]]:
-    feed = RSS_FEED_NEW_ARTICLE if mode is Mode.NEW_ARTICLE else RSS_FEED_BASELINE
-    return {
-        "/": ("text/html", RSS_HTML),
-        "/feed.xml": ("application/rss+xml", feed),
-    }
+    match mode:
+        case Mode.BASELINE:
+            return {
+                "/": ("text/html", RSS_HTML),
+                "/feed.xml": ("application/rss+xml", RSS_FEED_BASELINE),
+            }
+        case Mode.NEW_ARTICLE:
+            return {
+                "/": ("text/html", RSS_HTML),
+                "/feed.xml": ("application/rss+xml", RSS_FEED_NEW_ARTICLE),
+            }
+        case Mode.FEED_MOVED:
+            return {
+                "/": ("text/html", RSS_FEED_MOVED),
+                "/feed_moved.xml": ("application/rss+xml", RSS_FEED_BASELINE),
+            }
 
 
 def _build_sitemap_routes(port: int, mode: Mode) -> dict[str, tuple[str, bytes]]:
@@ -86,14 +108,18 @@ def _build_sitemap_routes(port: int, mode: Mode) -> dict[str, tuple[str, bytes]]
         f"{base}/posts/hello-world",
         f"{base}/posts/second-post",
     ]
+
     if mode is Mode.NEW_ARTICLE:
         urls.append(f"{base}/posts/third-post")
-    sitemap_xml = (
-        '<?xml version="1.0" encoding="UTF-8"?>\n'
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-        + "".join(f"  <url><loc>{url}</loc></url>\n" for url in urls)
-        + "</urlset>\n"
-    ).encode()
+
+    url_entries = "".join(f"  <url><loc>{u}</loc></url>\n" for u in urls)
+
+    sitemap_xml = f"""\
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+{url_entries}</urlset>
+""".encode()
+
     return {
         "/": ("text/html", b"<html><body>no feed</body></html>"),
         "/robots.txt": ("text/plain", robots_txt),
@@ -135,14 +161,18 @@ class Handler(SimpleHTTPRequestHandler):
         if parsed.path != "/_control/set-mode":
             self.send_error(404)
             return
+
         params = parse_qs(parsed.query)
         mode_raw = params.get("mode", [None])[0]
+
         try:
             mode = Mode(mode_raw)
         except ValueError:
             self.send_error(400)
             return
-        self.set_mode(mode=mode, port=self.server.server_address[1])
+
+        addr = cast("tuple[Any, ...]", self.server.server_address)
+        self.set_mode(mode=mode, port=int(addr[1]))
         self.send_response(200)
         self.end_headers()
         self.wfile.write(b"ok")

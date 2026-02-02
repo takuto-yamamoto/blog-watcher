@@ -68,6 +68,21 @@ def assert_change_detected(before: list[BlogStateRow], after: list[BlogStateRow]
         assert curr.consecutive_errors == 0, f"consecutive_errors not zero for {blog_id} after change"
 
 
+def assert_feed_url_changed(before: list[BlogStateRow], after: list[BlogStateRow]) -> None:
+    before_by_id = {s.blog_id: s for s in before}
+    after_by_id = {s.blog_id: s for s in after}
+
+    assert before_by_id.keys() == after_by_id.keys(), "blog_id set changed between runs"
+
+    for blog_id, prev in before_by_id.items():
+        curr = after_by_id[blog_id]
+        assert curr.feed_url is not None, f"feed_url is None for {blog_id}"
+        assert curr.feed_url != prev.feed_url, (
+            f"feed_url did not change for {blog_id}: {prev.feed_url} -> {curr.feed_url}"
+        )
+        assert curr.consecutive_errors == 0, f"consecutive_errors not zero for {blog_id}"
+
+
 def assert_slack_notifications_sent(
     config: SlackConfig,
     *,

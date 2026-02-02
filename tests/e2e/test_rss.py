@@ -9,6 +9,7 @@ from tests.e2e.assertions import (
     assert_all_blogs_tracked,
     assert_blog_states_populated,
     assert_change_detected,
+    assert_feed_url_changed,
     assert_no_change_on_rerun,
     assert_slack_notifications_sent,
 )
@@ -38,6 +39,7 @@ def test_rss_e2e(env: E2eEnv, fake_rss_server: int, db_path: Path) -> None:
     run1_id = _new_run_id("rss-run1")
     run2_id = _new_run_id("rss-run2")
     run3_id = _new_run_id("rss-run3")
+    run4_id = _new_run_id("rss-run4")
 
     run1_config = write_temp_config(port, run1_id)
     blogs = load_blog_config(run1_config)
@@ -71,3 +73,14 @@ def test_rss_e2e(env: E2eEnv, fake_rss_server: int, db_path: Path) -> None:
     assert_all_blogs_tracked(blog_states_run3, blogs)
     assert_change_detected(blog_states_run2, blog_states_run3)
     assert_slack_notifications_sent(env.slack, includes={run1_id, run3_id}, excludes={run2_id})
+
+    # Run 4: feed URL moved — cached /feed.xml returns 404, re-discover /rss.xml
+    set_server_mode(port, Mode.FEED_MOVED)
+    run4_config = write_temp_config(port, run4_id)
+    _run_once(run4_config, db_path)
+
+    blog_states_run4 = list_blog_states(db_path)
+
+    assert_all_blogs_tracked(blog_states_run4, blogs)
+    assert_feed_url_changed(blog_states_run3, blog_states_run4)
+    assert_slack_notifications_sent(env.slack, includes={run1_id, run3_id, run4_id}, excludes={run2_id})

@@ -17,6 +17,7 @@ class Scenario(Enum):
 class Mode(Enum):
     BASELINE = "baseline"
     NEW_ARTICLE = "new-article"
+    FEED_MOVED = "feed-moved"
 
 
 _CONTROL_ENDPOINT: Final[str] = "/_control/set-mode"
