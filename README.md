@@ -30,6 +30,14 @@ python -m build --wheel
 hatch build
 ```
 
+## Configuration
+
+Copy the example config and edit for your environment
+
+```bash
+cp config.example.toml config.toml
+```
+
 ## Installation
 
 You can install with standard `pip install`.

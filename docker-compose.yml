@@ -1,0 +1,12 @@
+services:
+  blog-watcher:
+    build: .
+    container_name: blog-watcher
+    restart: unless-stopped
+    volumes:
+      - ./config.toml:/app/config.toml:ro
+      - ./data:/data
+    environment:
+      - LOG_FORMAT=console
+      - LOG_LEVEL=INFO
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
