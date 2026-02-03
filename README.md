@@ -35,6 +35,10 @@ blog-watcher --help
 blog-watcher -c path/to/config.toml --once --db-path blog_states.sqlite
 ```
 
+Behavior:
+- On the first run, a single "Initial sync completed" notification is sent per blog.
+- Subsequent runs only notify when a blog changes.
+
 ## Config
 
 ```toml

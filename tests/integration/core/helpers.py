@@ -18,6 +18,7 @@ class DetectionResult:
     changed: bool
     http_status: int | None
     url_fingerprint: str | None
+    is_initial: bool = False
 
 
 class CountingWatcher:

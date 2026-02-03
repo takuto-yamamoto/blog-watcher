@@ -23,7 +23,7 @@ async def test_check_cycle_persists_state_and_history(tmp_path: Path) -> None:
     now = datetime.now(UTC)
     blog_id = "https://example.com/blog"
     results = [
-        DetectionResult(blog_id=blog_id, changed=True, http_status=200, url_fingerprint="fp-1"),
+        DetectionResult(blog_id=blog_id, changed=True, http_status=200, url_fingerprint="fp-1", is_initial=True),
         DetectionResult(blog_id=blog_id, changed=False, http_status=304, url_fingerprint="fp-1"),
     ]
     detector = SequenceDetector(results)

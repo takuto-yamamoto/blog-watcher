@@ -61,8 +61,8 @@ class ChangeDetector:
         sitemap_changed = sitemap_result.changed if sitemap_result is not None else False
         changed = feed_result.changed or sitemap_changed
 
-        # First run with no previous state is always changed
-        if not changed and previous_state is None:
+        is_initial = previous_state is None
+        if is_initial:
             changed = True
 
         effective_fingerprint = sitemap_result.fingerprint if sitemap_result is not None and sitemap_result.fingerprint else feed_result.fingerprint
@@ -80,8 +80,8 @@ class ChangeDetector:
             sitemap_last_modified=sitemap_result.last_modified if sitemap_result is not None else None,
         )
 
-        self._persist_state(context, changed=changed, previous_state=previous_state)
-        return self._build_result(context, changed=changed)
+        self._persist_state(context, changed=changed, previous_state=previous_state, is_initial=is_initial)
+        return self._build_result(context, changed=changed, is_initial=is_initial)
 
     async def _fetch_html(self, url: str) -> FetchResult:
         result = await self._fetcher.fetch(url)
@@ -96,8 +96,15 @@ class ChangeDetector:
         *,
         changed: bool,
         previous_state: BlogState | None,
+        is_initial: bool,
     ) -> None:
         now = datetime.now(UTC)
+        if is_initial:
+            last_changed_at = previous_state.last_changed_at if previous_state else None
+        elif changed:
+            last_changed_at = now
+        else:
+            last_changed_at = previous_state.last_changed_at if previous_state else None
         new_state = BlogState(
             blog_id=context.blog_id,
             etag=context.fetch_result.etag,
@@ -107,7 +114,7 @@ class ChangeDetector:
             sitemap_url=context.sitemap_url,
             recent_entry_keys=json.dumps(list(context.entry_keys)),
             last_checked_at=now,
-            last_changed_at=now if changed else previous_state.last_changed_at if previous_state else None,
+            last_changed_at=last_changed_at,
             consecutive_errors=0,
             feed_etag=context.feed_etag,
             feed_last_modified=context.feed_last_modified,
@@ -116,10 +123,11 @@ class ChangeDetector:
         )
         self._state_repo.upsert(new_state)
 
-    def _build_result(self, context: _CheckContext, *, changed: bool) -> DetectionResult:
+    def _build_result(self, context: _CheckContext, *, changed: bool, is_initial: bool) -> DetectionResult:
         return DetectionResult(
             blog_id=context.blog_id,
             changed=changed,
             http_status=context.fetch_result.status_code,
             url_fingerprint=context.fingerprint,
+            is_initial=is_initial,
         )
