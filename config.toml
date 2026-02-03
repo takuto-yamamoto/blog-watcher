@@ -1,0 +1,11 @@
+# Required. Can be overridden by the SLACK_WEBHOOK_URL env var.
+webhook_url = "$SLACK_WEBHOOK_URL"
+
+# Must be a non-empty list.
+[[blogs]]
+name = "Example Blog"
+url = "https://example.com"
+
+[[blogs]]
+name = "Another Blog"
+url = "https://example.org"
