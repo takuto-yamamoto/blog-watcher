@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Annotated
 import httpx
 import typer
 
-from blog_watcher.config import ConfigError, load_config
+from blog_watcher.config import ConfigError, FileConfigProvider, load_config
 from blog_watcher.core import BlogWatcher, WatcherScheduler
 from blog_watcher.detection.change_detector import ChangeDetector
 from blog_watcher.detection.http_fetcher import HttpFetcher
@@ -37,6 +37,7 @@ class ApplicationComponents:
 @asynccontextmanager
 async def create_application(config_path: Path, db_path: Path) -> AsyncIterator[ApplicationComponents]:
     config = load_config(config_path)
+    config_provider = FileConfigProvider(config_path)
 
     db = Database(db_path)
     db.initialize()
@@ -49,7 +50,7 @@ async def create_application(config_path: Path, db_path: Path) -> AsyncIterator[
     detector = ChangeDetector(fetcher=fetcher, state_repo=state_repo)
     notifier = SlackNotifier(client=client, config=config.slack)
     watcher = BlogWatcher(
-        config=config,
+        config_provider=config_provider,
         detector=detector,
         notifier=notifier,
         state_repo=state_repo,

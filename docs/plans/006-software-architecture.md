@@ -133,7 +133,7 @@ def create_application(config_path: Path) -> Generator[ApplicationComponents, No
         notifier = SlackNotifier(config.slack)
 
         # Core layer
-        watcher = BlogWatcher(config, detector, notifier)
+        watcher = BlogWatcher(config_provider, detector, notifier)
         scheduler = WatcherScheduler(config, watcher)
 
         yield ApplicationComponents(

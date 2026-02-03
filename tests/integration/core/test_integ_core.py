@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 from freezegun import freeze_time
 
-from blog_watcher.config import AppConfig, BlogConfig, SlackConfig
+from blog_watcher.config import AppConfig, BlogConfig, SlackConfig, StaticConfigProvider
 from blog_watcher.core import BlogWatcher
 from blog_watcher.detection import DetectionResult
 from blog_watcher.storage import BlogState, BlogStateRepository, CheckHistory, CheckHistoryRepository, Database
@@ -34,8 +34,9 @@ async def test_check_cycle_persists_state_and_history(tmp_path: Path) -> None:
         blogs=[BlogConfig(name="Example Blog", url="https://example.com/blog")],
     )
 
+    config_provider = StaticConfigProvider(config)
     watcher = BlogWatcher(
-        config=config,
+        config_provider=config_provider,
         detector=detector,
         notifier=notifier,
         state_repo=state_repo,
