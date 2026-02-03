@@ -12,16 +12,35 @@ This project provides a streamlined experience specifically designed for monitor
 - **Notifications**: Receive alerts when your favorite blogs are updated
 - **Easy configuration**: Simple setup compared to general-purpose monitoring tools
 
-## Installation
+## Build
+
+### Build with Python
 
 ```bash
-# Build a wheel (PEP 517)
+# Install the build helper
+python -m pip install build
+
+# Build a wheel
 python -m build --wheel
+```
 
-# Install from the built wheel
+### Build with Hatch
+
+```bash
+hatch build
+```
+
+## Installation
+
+You can install with standard `pip install`.
+
+```bash
 python -m pip install dist/blog_watcher-0.1.0-py3-none-any.whl
+```
 
-# Or install via pipx (isolated, recommended for CLI)
+Alternatively, you can install cleanly with pipx.
+
+```bash
 pipx install dist/blog_watcher-0.1.0-py3-none-any.whl
 ```
 
@@ -30,6 +49,9 @@ pipx install dist/blog_watcher-0.1.0-py3-none-any.whl
 ```bash
 # Show CLI help
 blog-watcher --help
+
+# Run continuously
+blog-watcher -c path/to/config.toml
 
 # Run once with a config file and custom DB path
 blog-watcher -c path/to/config.toml --once --db-path blog_states.sqlite

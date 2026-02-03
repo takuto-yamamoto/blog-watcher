@@ -1,4 +1,5 @@
 # Required. Can be overridden by the SLACK_WEBHOOK_URL env var.
+[slack]
 webhook_url = "$SLACK_WEBHOOK_URL"
 
 # Must be a non-empty list.

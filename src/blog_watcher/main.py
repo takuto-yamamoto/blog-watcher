@@ -73,7 +73,7 @@ async def create_application(config_path: Path, db_path: Path) -> AsyncIterator[
 @app.command()
 def run(
     config: Annotated[Path, typer.Option("-c", "--config")],
-    once: Annotated[bool, typer.Option("--once", is_flag=True)],
+    once: Annotated[bool | None, typer.Option("--once", is_flag=True)] = None,
     db_path: Annotated[Path, typer.Option("--db-path")] = Path("blog_states.sqlite"),
 ) -> None:
     configure_logging()
@@ -83,6 +83,7 @@ def run(
         else:
             asyncio.run(_run_scheduler(config, db_path))
     except ConfigError as exc:
+        typer.echo(str(exc), err=True)
         raise typer.Exit(code=1) from exc
 
 
