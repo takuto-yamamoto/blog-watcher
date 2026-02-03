@@ -35,6 +35,26 @@ blog-watcher --help
 blog-watcher -c path/to/config.toml --once --db-path blog_states.sqlite
 ```
 
+## Config
+
+```toml
+[slack]
+webhook_url = "$SLACK_WEBHOOK_URL"
+
+[[blogs]]
+name = "Example Blog"
+url = "https://example.com"
+
+[[blogs]]
+name = "Another Blog"
+url = "https://example.org"
+```
+
+Notes:
+- `slack` is required and only `webhook_url` is accepted.
+- `blogs` must be a non-empty list; each entry requires `name` and `url`.
+- Unknown keys are rejected.
+
 ## Author
 
 takuto-yamamoto

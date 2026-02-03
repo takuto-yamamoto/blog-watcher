@@ -40,3 +40,6 @@ venv/
 # SQLite
 *.sqlite
 *.sqlite-journal
+
+# config
+config.toml
